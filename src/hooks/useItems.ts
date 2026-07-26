@@ -37,6 +37,18 @@ export function useItems() {
     void afterDataMutation();
   };
 
+  const updateItems = async (
+    updates: Array<{ id: string; changes: Partial<Item> }>,
+  ) => {
+    const now = new Date().toISOString();
+    await db.transaction("rw", db.items, async () => {
+      for (const { id, changes } of updates) {
+        await db.items.update(id, { ...changes, updatedAt: now });
+      }
+    });
+    void afterDataMutation();
+  };
+
   const deleteItem = async (id: string) => {
     const item = await db.items.get(id);
     await db.items.delete(id);
@@ -96,6 +108,7 @@ export function useItems() {
     itemsLoading,
     addItem,
     updateItem,
+    updateItems,
     deleteItem,
     deleteItemCascade,
     restoreItem,

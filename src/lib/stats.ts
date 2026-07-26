@@ -7,7 +7,9 @@ import {
 } from "date-fns";
 import type { Category, CompletionLog, Item } from "../types";
 import { isDueToday, isOverdue } from "./dates";
+import { buildEventDeadlineEntries, deadlineUrgency } from "./event-deadlines";
 import { countNeedsChase } from "./pipeline";
+import { countTriageCandidates } from "./triage";
 
 export interface TodaySummary {
   overdue: number;
@@ -17,6 +19,10 @@ export interface TodaySummary {
   openThreads: number;
   /** Threads that need a nudge right now */
   needsNudge: number;
+  /** Event prep deadlines within a week */
+  urgentPrep: number;
+  /** Fresh captures without a schedule */
+  triage: number;
   snoozed: number;
   priority: number;
   byCategory: { category: Category; count: number }[];
@@ -67,6 +73,10 @@ export function computeTodaySummary(
     routines,
     openThreads: followUps,
     needsNudge: countNeedsChase(items),
+    urgentPrep: buildEventDeadlineEntries(items).filter(
+      (e) => deadlineUrgency(e.daysUntilPrep) === "high",
+    ).length,
+    triage: countTriageCandidates(items),
     snoozed,
     priority,
     byCategory,

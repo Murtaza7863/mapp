@@ -20,6 +20,7 @@ import {
 import { InstallPrompt } from "./InstallPrompt";
 import { OfflineBanner } from "./OfflineBanner";
 import { UndoToast } from "./UndoToast";
+import { useCommandShortcuts } from "../hooks/useCommandShortcuts";
 import { useItems } from "../hooks/useItems";
 import {
   buildEventDeadlineEntries,
@@ -57,6 +58,7 @@ export function Layout() {
   const [moreOpen, setMoreOpen] = useState(false);
   const navigate = useNavigate();
   const { items } = useItems();
+  useCommandShortcuts();
 
   const nudgeCount = useMemo(() => countNeedsChase(items), [items]);
 

@@ -41,6 +41,19 @@ describe("buildCommandFeed", () => {
     expect(feed[0].bucket).toBe("overdue");
   });
 
+  it("includes urgent prep deadlines in feed", () => {
+    const now = new Date("2026-07-26T12:00:00");
+    const thread = createItem({
+      title: "Summit prep",
+      type: "follow-up",
+      linkedEventAt: new Date("2026-08-10T09:00:00").toISOString(),
+    });
+    vi.setSystemTime(now);
+    const feed = buildCommandFeed([thread], { now });
+    vi.useRealTimers();
+    expect(feed.some((e) => e.bucket === "prep")).toBe(true);
+  });
+
   it("surfaces chase threads as the first bucket with a reason", () => {
     const now = new Date("2026-07-26T12:00:00");
     const stale = createItem({

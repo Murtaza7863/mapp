@@ -1,16 +1,28 @@
 import { useState } from "react";
 
+import { looksLikeMultiCapture, readClipboardText } from "../lib/clipboard";
 import { parseQuickAdd } from "../lib/quickadd";
 import type { Category, ItemInput } from "../types";
 
 interface Props {
   categories: Category[];
   onAdd: (input: Partial<ItemInput> & { title: string }) => Promise<void>;
+  onPasteToPlot?: (text: string) => void;
 }
 
-export function QuickAddBar({ categories, onAdd }: Props) {
+export function QuickAddBar({ categories, onAdd, onPasteToPlot }: Props) {
   const [value, setValue] = useState("");
   const [saving, setSaving] = useState(false);
+
+  const paste = async () => {
+    const text = await readClipboardText();
+    if (!text) return;
+    if (looksLikeMultiCapture(text) && onPasteToPlot) {
+      onPasteToPlot(text);
+      return;
+    }
+    setValue(text);
+  };
 
   const submit = async () => {
     const trimmed = value.trim();
@@ -57,6 +69,14 @@ export function QuickAddBar({ categories, onAdd }: Props) {
         className="input-field min-w-0 flex-1 rounded-xl px-3.5 py-2.5 text-sm"
         aria-label="Quick add task"
       />
+      <button
+        type="button"
+        onClick={() => void paste()}
+        className="border-zinc-800 text-zinc-500 shrink-0 rounded-xl border px-3 py-2.5 text-xs"
+        aria-label="Paste from clipboard"
+      >
+        Paste
+      </button>
       <button
         type="button"
         disabled={!value.trim() || saving}

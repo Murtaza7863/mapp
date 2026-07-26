@@ -11,6 +11,8 @@ const CHIP_STYLES: Record<string, string> = {
   Today: "text-sky-300 border-sky-400/20 bg-sky-400/8",
   Routines: "text-emerald-300 border-emerald-400/20 bg-emerald-400/8",
   Nudge: "text-violet-300 border-violet-400/20 bg-violet-400/8",
+  Prep: "text-fuchsia-300 border-fuchsia-400/20 bg-fuchsia-400/8",
+  Triage: "text-orange-300 border-orange-400/20 bg-orange-400/8",
   Open: "text-violet-300/70 border-violet-400/15 bg-violet-400/5",
   Snoozed: "text-amber-300 border-amber-400/20 bg-amber-400/8",
   Priority: "text-yellow-300 border-yellow-400/20 bg-yellow-400/8",
@@ -21,6 +23,7 @@ const CHIP_FOCUS: Record<string, FeedFocus> = {
   Today: "today",
   Routines: "routine",
   Nudge: "chase",
+  Prep: "prep",
   Snoozed: "snoozed",
   Priority: "priority",
 };
@@ -31,6 +34,7 @@ interface Props {
   areaFilter?: string | null;
   onFocusChange?: (focus: FeedFocus | null) => void;
   onAreaFilterChange?: (categoryId: string | null) => void;
+  onTriage?: () => void;
 }
 
 export function TodayStats({
@@ -39,12 +43,15 @@ export function TodayStats({
   areaFilter = null,
   onFocusChange,
   onAreaFilterChange,
+  onTriage,
 }: Props) {
   const chips = [
     { label: "Overdue", value: summary.overdue },
     { label: "Today", value: summary.dueToday },
     { label: "Routines", value: summary.routines },
     { label: "Nudge", value: summary.needsNudge },
+    { label: "Prep", value: summary.urgentPrep },
+    { label: "Triage", value: summary.triage, action: onTriage },
     { label: "Open", value: summary.openThreads, link: "/follow-ups" },
     { label: "Snoozed", value: summary.snoozed },
     { label: "Priority", value: summary.priority },
@@ -78,6 +85,20 @@ export function TodayStats({
                 <span className="mr-1 opacity-70">{chip.value}</span>
                 {chip.label}
               </Link>
+            );
+          }
+
+          if ("action" in chip && chip.action) {
+            return (
+              <button
+                key={chip.label}
+                type="button"
+                onClick={chip.action}
+                className={`${className} cursor-pointer`}
+              >
+                <span className="mr-1 opacity-70">{chip.value}</span>
+                {chip.label}
+              </button>
             );
           }
 

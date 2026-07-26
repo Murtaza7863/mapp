@@ -1,15 +1,20 @@
 import { format } from "date-fns";
 import { useLiveQuery } from "dexie-react-hooks";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { CategoryBadge } from "../components/CategoryBadge";
 import { TypeBadge } from "../components/TypeBadge";
+import { WeeklyReviewSheet } from "../components/WeeklyReviewSheet";
 import { PageHeader } from "../components/ui";
 import { db } from "../db";
 import { useCategories } from "../hooks/useCategories";
 import { useCompletions, useItems } from "../hooks/useItems";
 import { computeWeeklyInsights } from "../lib/stats";
+import {
+  buildWeeklyReview,
+  shouldSuggestWeeklyReview,
+} from "../lib/weekly-review";
 import { ITEM_TYPE_LABELS } from "../types";
 
 export function InsightsView() {
@@ -17,6 +22,7 @@ export function InsightsView() {
   const { completions } = useCompletions();
   const { categories } = useCategories();
   const settings = useLiveQuery(() => db.settings.get("app"), []);
+  const [reviewOpen, setReviewOpen] = useState(false);
 
   const insights = useMemo(
     () =>
@@ -28,6 +34,22 @@ export function InsightsView() {
     [completions, categories, settings?.weekStartsOnMonday],
   );
 
+  const weeklyReview = useMemo(
+    () =>
+      buildWeeklyReview(
+        items,
+        completions,
+        categories,
+        settings?.weekStartsOnMonday ?? false,
+      ),
+    [items, completions, categories, settings?.weekStartsOnMonday],
+  );
+
+  const showReviewCta = shouldSuggestWeeklyReview(
+    new Date(),
+    settings?.weekStartsOnMonday ?? false,
+  );
+
   const pending = items.filter((i) => i.status === "pending").length;
   const done = items.filter((i) => i.status === "done").length;
   const total = items.length;
@@ -35,6 +57,16 @@ export function InsightsView() {
   return (
     <div>
       <PageHeader title="Insights" subtitle="This week" />
+
+      {(showReviewCta || weeklyReview.sections.length > 0) && (
+        <button
+          type="button"
+          onClick={() => setReviewOpen(true)}
+          className="btn-primary mb-4 w-full rounded-xl py-3 text-sm"
+        >
+          Start weekly review
+        </button>
+      )}
 
       <div className="mb-6 grid grid-cols-2 gap-3">
         <StatCard
@@ -108,6 +140,13 @@ export function InsightsView() {
           {total} items · {completions.length} completions logged
         </p>
       </section>
+
+      {reviewOpen && (
+        <WeeklyReviewSheet
+          review={weeklyReview}
+          onClose={() => setReviewOpen(false)}
+        />
+      )}
     </div>
   );
 }

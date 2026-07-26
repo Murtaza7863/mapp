@@ -1,27 +1,10 @@
-import { addDays } from "date-fns";
-
 import type { Item, PipelineStage } from "../types";
 
-import { STALE_DAYS } from "../lib/pipeline";
+import {
+  applyThreadStage,
+  THREAD_QUICK_ACTIONS,
+} from "../lib/thread-actions";
 import { PIPELINE_STAGE_LABELS } from "../types";
-
-const QUICK_ACTIONS: {
-  label: string;
-  stage: PipelineStage;
-  bumpContact?: boolean;
-  /** Schedule a look-back so deferral always resurfaces */
-  scheduleCheckBack?: boolean;
-}[] = [
-  {
-    label: "Bump sent",
-    stage: "waiting",
-    bumpContact: true,
-    scheduleCheckBack: true,
-  },
-  { label: "They replied", stage: "scheduling", bumpContact: true },
-  { label: "Your turn", stage: "my_turn" },
-  { label: "Revisit later", stage: "deferred", scheduleCheckBack: true },
-];
 
 interface Props {
   item: Item;
@@ -31,24 +14,20 @@ interface Props {
 export function ThreadActions({ item, onUpdate }: Props) {
   if (item.type !== "follow-up" || item.status === "done") return null;
 
-  const apply = (
-    stage: PipelineStage,
-    bumpContact?: boolean,
-    scheduleCheckBack?: boolean,
-  ) => {
-    const now = new Date();
-    onUpdate({
-      pipelineStage: stage,
-      ...(bumpContact ? { lastContactAt: now.toISOString() } : {}),
-      ...(scheduleCheckBack
-        ? { checkBackAt: addDays(now, STALE_DAYS).toISOString() }
-        : {}),
-    });
+  const apply = (stage: PipelineStage, bumpContact?: boolean, scheduleCheckBack?: boolean) => {
+    const action = THREAD_QUICK_ACTIONS.find(
+      (a) =>
+        a.stage === stage &&
+        !!a.bumpContact === !!bumpContact &&
+        !!a.scheduleCheckBack === !!scheduleCheckBack,
+    );
+    if (!action) return;
+    onUpdate(applyThreadStage(item, action));
   };
 
   return (
     <div className="flex flex-wrap gap-1.5 pr-1 pb-2 pl-9">
-      {QUICK_ACTIONS.map((action) => (
+      {THREAD_QUICK_ACTIONS.map((action) => (
         <button
           key={action.label}
           type="button"

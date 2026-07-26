@@ -244,6 +244,12 @@ body {
   border-bottom-right-radius: 0;
 }
 
+.momentum-bar {
+  border: 1px solid rgba(52, 211, 153, 0.15);
+  background: rgba(52, 211, 153, 0.06);
+  color: #6ee7b7;
+}
+
 .app-header {
   padding-top: env(safe-area-inset-top);
 }

@@ -4,6 +4,7 @@ import type { ParseDumpResult } from "../lib/brain-dump/types";
 import type { Category } from "../types";
 
 import { checkWebGPU, warmupPlotEngine } from "../lib/brain-dump/llm-engine";
+import { readClipboardText } from "../lib/clipboard";
 import { parseBrainDump } from "../lib/brain-dump/parse-dump";
 import { ArrowRightIcon, SparkIcon } from "./icons";
 import { ParseConfirmSheet } from "./ParseConfirmSheet";
@@ -11,12 +12,13 @@ import { ParseConfirmSheet } from "./ParseConfirmSheet";
 interface Props {
   categories: Category[];
   onParsed: (result: ParseDumpResult) => void;
+  initialText?: string;
 }
 
 type Phase = "idle" | "loading-model" | "parsing" | "confirm";
 
-export function PlotBar({ categories, onParsed }: Props) {
-  const [value, setValue] = useState("");
+export function PlotBar({ categories, onParsed, initialText }: Props) {
+  const [value, setValue] = useState(initialText ?? "");
   const [expanded, setExpanded] = useState(false);
   const [phase, setPhase] = useState<Phase>("idle");
   const [useLlm, setUseLlm] = useState(false);
@@ -30,6 +32,21 @@ export function PlotBar({ categories, onParsed }: Props) {
       if (ok) warmupPlotEngine();
     });
   }, []);
+
+  useEffect(() => {
+    if (initialText) {
+      setValue(initialText);
+      setExpanded(true);
+    }
+  }, [initialText]);
+
+  const paste = async () => {
+    const text = await readClipboardText();
+    if (!text) return;
+    setValue(text);
+    setExpanded(true);
+    inputRef.current?.focus();
+  };
 
   const busy = phase === "loading-model" || phase === "parsing";
   const canSubmit = value.trim().length > 0 && !busy;
@@ -93,6 +110,15 @@ export function PlotBar({ categories, onParsed }: Props) {
             className="compose-bar-input"
             aria-label="Plot tasks"
           />
+          <button
+            type="button"
+            onClick={() => void paste()}
+            className="compose-bar-go mr-1 opacity-70"
+            aria-label="Paste from clipboard"
+            title="Paste"
+          >
+            <span className="text-[10px] font-semibold">⌘V</span>
+          </button>
           <button
             type="button"
             onClick={() => void runPlot()}

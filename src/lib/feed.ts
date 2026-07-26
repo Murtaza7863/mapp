@@ -3,11 +3,16 @@ import { parseISO } from "date-fns";
 import type { Item } from "../types";
 
 import { isDueToday, isOverdue, isUpcoming } from "./dates";
+import {
+  buildEventDeadlineEntries,
+  deadlineUrgency,
+} from "./event-deadlines";
 import { isActionable } from "./items";
 import { chaseReason, needsChase } from "./pipeline";
 
 export type FeedBucket =
   | "chase"
+  | "prep"
   | "overdue"
   | "today"
   | "routine"
@@ -25,6 +30,7 @@ export interface FeedEntry {
 
 export const BUCKET_LABELS: Record<FeedBucket, string> = {
   chase: "Needs a nudge",
+  prep: "Event prep due",
   overdue: "Overdue",
   today: "Today",
   routine: "Daily habits",
@@ -35,6 +41,7 @@ export const BUCKET_LABELS: Record<FeedBucket, string> = {
 
 const FEED_SECTION_ORDER: FeedBucket[] = [
   "chase",
+  "prep",
   "overdue",
   "today",
   "routine",
@@ -55,7 +62,8 @@ export function groupFeedByBucket(
 }
 
 const BUCKET_ORDER: Record<FeedBucket, number> = {
-  chase: -1,
+  chase: -2,
+  prep: -1,
   overdue: 0,
   today: 1,
   routine: 2,
@@ -93,6 +101,16 @@ export function buildCommandFeed(
   for (const item of items) {
     if (!needsChase(item, now)) continue;
     add(item, "chase", chaseReason(item, now));
+  }
+
+  for (const entry of buildEventDeadlineEntries(items)) {
+    if (seen.has(entry.item.id)) continue;
+    if (deadlineUrgency(entry.daysUntilPrep) === "low") continue;
+    const label =
+      entry.daysUntilPrep <= 0
+        ? "Prep overdue"
+        : `Prep due in ${entry.daysUntilPrep}d`;
+    add(entry.item, "prep", label);
   }
 
   const pending = items.filter(
@@ -188,6 +206,7 @@ export function groupFeedByArea(
 /** Summary chip → feed filter. */
 export type FeedFocus =
   | "chase"
+  | "prep"
   | "overdue"
   | "today"
   | "routine"

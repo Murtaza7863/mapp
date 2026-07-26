@@ -2,6 +2,10 @@ import { db } from "../db";
 import { getSettings } from "../db";
 import type { Item } from "../types";
 import { getNotificationFireTime } from "./dates";
+import {
+  buildEventDeadlineEntries,
+  deadlineUrgency,
+} from "./event-deadlines";
 import { chaseReason, needsChase } from "./pipeline";
 import { canUseWebPush, pushBlockReason } from "./pwa";
 
@@ -74,6 +78,25 @@ export function buildScheduledNotifications(
         body: chaseReason(item, new Date(now)),
         url: `/follow-ups?item=${item.id}`,
       });
+    }
+
+    if (item.type === "follow-up" && item.linkedEventAt) {
+      const entry = buildEventDeadlineEntries([item])[0];
+      if (entry && deadlineUrgency(entry.daysUntilPrep) !== "low") {
+        const fireAt = getNotificationFireTime({
+          ...item,
+          dueAt: entry.prepDueAt,
+        });
+        if (fireAt && new Date(fireAt).getTime() > now - 60_000) {
+          scheduled.push({
+            id: `${item.id}-prep`,
+            fireAt,
+            title: `Prep due: ${item.contactName ?? item.title}`,
+            body: `Event prep deadline in ${entry.daysUntilPrep}d`,
+            url: `/follow-ups?item=${item.id}`,
+          });
+        }
+      }
     }
   }
 

@@ -10,12 +10,15 @@ import { DailyBriefingCard } from "../components/DailyBriefingCard";
 import { StarIcon } from "../components/icons";
 import { ItemForm, SnoozeSheet } from "../components/ItemForm";
 import { LoadingView } from "../components/LoadingView";
+import { MomentumBar } from "../components/MomentumBar";
 import { NudgeQueue } from "../components/NudgeQueue";
 import { PlotBar } from "../components/PlotBar";
 import { QuickAddBar } from "../components/QuickAddBar";
 import { SwipeItem } from "../components/SwipeItem";
 import { ThreadActions } from "../components/ThreadActions";
 import { TodayStats } from "../components/TodayStats";
+import { TriageSession } from "../components/TriageSession";
+import { WrapUpSheet, tomorrowMorning } from "../components/WrapUpSheet";
 import {
   EmptyState,
   FilterPill,
@@ -23,10 +26,11 @@ import {
   SectionHeader,
 } from "../components/ui";
 import { useCategories } from "../hooks/useCategories";
-import { useItems } from "../hooks/useItems";
+import { useCompletions, useItems } from "../hooks/useItems";
 import { useToast } from "../hooks/useToast";
 import { useUndo } from "../hooks/useUndo";
 import { applyProposals } from "../lib/brain-dump/apply-proposals";
+import { applyThreadActionToItems } from "../lib/batch-threads";
 import { computeDailyBriefing } from "../lib/briefing";
 import { buildEventDeadlineEntries } from "../lib/event-deadlines";
 import {
@@ -40,6 +44,10 @@ import {
 import { buildSuggestions } from "../lib/pipeline";
 import { setLastCategoryId } from "../lib/preferences";
 import { computeTodaySummary } from "../lib/stats";
+import { findQuickAction } from "../lib/thread-actions";
+import { findTriageCandidates } from "../lib/triage";
+import { computeMomentum } from "../lib/momentum";
+import { computeWrapUpSummary, isWrapUpTime } from "../lib/wrapup";
 
 type ViewMode = "feed" | "areas";
 
@@ -49,12 +57,14 @@ export function TodayView() {
     itemsLoading,
     addItem,
     updateItem,
+    updateItems,
     deleteItem,
     restoreItem,
     markDone,
     snooze,
     unsnooze,
   } = useItems();
+  const { completions } = useCompletions();
   const { categories, getCategory, addCategory } = useCategories();
   const { deleteWithUndo } = useUndo();
   const { toast } = useToast();
@@ -65,6 +75,10 @@ export function TodayView() {
   const [feedFocus, setFeedFocus] = useState<FeedFocus | null>(null);
   const [areaFilter, setAreaFilter] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("feed");
+  const [wrapUpOpen, setWrapUpOpen] = useState(false);
+  const [triageOpen, setTriageOpen] = useState(false);
+  const [triageQueue, setTriageQueue] = useState<Item[]>([]);
+  const [plotPasteText, setPlotPasteText] = useState<string | undefined>();
 
   const folderNames = useMemo(() => {
     const map = new Map<string, string>();
@@ -79,6 +93,14 @@ export function TodayView() {
     [items, categories],
   );
   const briefing = useMemo(() => computeDailyBriefing(items), [items]);
+  const wrapUp = useMemo(
+    () => computeWrapUpSummary(items, completions),
+    [items, completions],
+  );
+  const momentum = useMemo(
+    () => computeMomentum(items, completions),
+    [items, completions],
+  );
   const suggestions = useMemo(() => buildSuggestions(items), [items]);
   const fullFeed = useMemo(() => buildCommandFeed(items), [items]);
   const feed = useMemo(() => {
@@ -93,6 +115,33 @@ export function TodayView() {
 
   const chaseMode = feedFocus === "chase";
 
+  const openTriage = () => {
+    setTriageQueue(findTriageCandidates(items));
+    setTriageOpen(true);
+  };
+
+  const bulkBumpChase = async () => {
+    const chaseItems = feed
+      .filter((e) => e.bucket === "chase")
+      .map((e) => e.item);
+    const action = findQuickAction("Bump sent");
+    if (!action || chaseItems.length === 0) return;
+    const updates = applyThreadActionToItems(chaseItems, action);
+    await updateItems(updates);
+    toast(`Bumped ${updates.length} thread${updates.length === 1 ? "" : "s"}`, {
+      kind: "success",
+    });
+  };
+
+  const parkForTomorrow = async () => {
+    const when = tomorrowMorning();
+    for (const item of wrapUp.parkable) {
+      await snooze(item, when);
+    }
+    setWrapUpOpen(false);
+    toast(`Parked ${wrapUp.parkable.length} for tomorrow`, { kind: "success" });
+  };
+
   const byArea = useMemo(
     () =>
       groupFeedByArea(feed, (id) => getCategory(id)?.name ?? "Uncategorized"),
@@ -105,8 +154,15 @@ export function TodayView() {
   const focusParam = searchParams.get("focus");
 
   useEffect(() => {
-    if (focusParam === "chase") setFeedFocus("chase");
-  }, [focusParam]);
+    if (
+      focusParam === "chase" ||
+      focusParam === "prep" ||
+      focusParam === "overdue"
+    ) {
+      setFeedFocus(focusParam);
+    }
+    if (searchParams.get("wrapup") === "1") setWrapUpOpen(true);
+  }, [focusParam, searchParams]);
 
   useEffect(() => {
     if (!deepLinkId) return;
@@ -243,7 +299,12 @@ export function TodayView() {
         briefing={briefing}
         onFocusNudge={() => setFeedFocus("chase")}
         onFocusOverdue={() => setFeedFocus("overdue")}
+        onFocusPrep={() => setFeedFocus("prep")}
+        onWrapUp={() => setWrapUpOpen(true)}
+        showWrapUp={isWrapUpTime()}
       />
+
+      <MomentumBar momentum={momentum} />
 
       <TodayStats
         summary={summary}
@@ -251,7 +312,29 @@ export function TodayView() {
         areaFilter={areaFilter}
         onFocusChange={setFeedFocus}
         onAreaFilterChange={setAreaFilter}
+        onTriage={openTriage}
       />
+
+      {summary.triage > 0 && !triageOpen && (
+        <button
+          type="button"
+          onClick={openTriage}
+          className="home-threads-banner w-full text-left"
+          style={{
+            borderColor: "rgba(251, 146, 60, 0.25)",
+            background: "rgba(251, 146, 60, 0.08)",
+            color: "#fdba74",
+          }}
+        >
+          <span>
+            {summary.triage} new capture{summary.triage === 1 ? "" : "s"} need a
+            date
+          </span>
+          <span className="home-threads-banner-cta" style={{ color: "#fb923c" }}>
+            Triage →
+          </span>
+        </button>
+      )}
 
       {summary.needsNudge > 0 && !hasNudgesInFeed && !chaseMode && (
         <button
@@ -283,6 +366,7 @@ export function TodayView() {
 
       <QuickAddBar
         categories={categories}
+        onPasteToPlot={(text) => setPlotPasteText(text)}
         onAdd={async (data) => {
           const created = await addItem(data);
           if (created.categoryId) setLastCategoryId(created.categoryId);
@@ -290,7 +374,11 @@ export function TodayView() {
         }}
       />
 
-      <PlotBar categories={categories} onParsed={handlePlot} />
+      <PlotBar
+        categories={categories}
+        initialText={plotPasteText}
+        onParsed={handlePlot}
+      />
 
       <EventDeadlinesSection
         items={items}
@@ -317,6 +405,12 @@ export function TodayView() {
           onClick={() => setViewMode("areas")}
         >
           By area
+        </FilterPill>
+        <FilterPill
+          active={feedFocus === "prep"}
+          onClick={() => setFeedFocus((f) => (f === "prep" ? null : "prep"))}
+        >
+          Prep
         </FilterPill>
         <FilterPill
           active={feedFocus === "chase"}
@@ -363,13 +457,24 @@ export function TodayView() {
             title="Nudge session"
             count={feed.length}
             action={
-              <button
-                type="button"
-                onClick={() => setFeedFocus(null)}
-                className="text-zinc-500 text-[11px] font-medium"
-              >
-                Exit
-              </button>
+              <div className="flex items-center gap-2">
+                {feed.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => void bulkBumpChase()}
+                    className="text-violet-300 text-[11px] font-medium"
+                  >
+                    Bump all
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setFeedFocus(null)}
+                  className="text-zinc-500 text-[11px] font-medium"
+                >
+                  Exit
+                </button>
+              </div>
             }
           />
           {feed.length === 0 ? (
@@ -455,6 +560,33 @@ export function TodayView() {
             await snooze(snoozeItem, date);
             setSnoozeItem(null);
           }}
+        />
+      )}
+
+      {wrapUpOpen && (
+        <WrapUpSheet
+          summary={wrapUp}
+          onClose={() => setWrapUpOpen(false)}
+          onParkForTomorrow={() => void parkForTomorrow()}
+          onOpenNudges={() => {
+            setWrapUpOpen(false);
+            setFeedFocus("chase");
+          }}
+        />
+      )}
+
+      {triageOpen && (
+        <TriageSession
+          items={triageQueue}
+          onSchedule={async (item, dueAt) => {
+            await updateItem(item.id, { dueAt: dueAt.toISOString() });
+            setTriageQueue((q) => q.filter((i) => i.id !== item.id));
+          }}
+          onDelete={async (item) => {
+            await deleteItem(item.id);
+            setTriageQueue((q) => q.filter((i) => i.id !== item.id));
+          }}
+          onClose={() => setTriageOpen(false)}
         />
       )}
     </div>
