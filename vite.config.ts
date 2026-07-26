@@ -4,6 +4,13 @@ import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
+  preview: {
+    // Allow Cloudflare quick tunnels / LAN hosts when sharing a phone preview.
+    allowedHosts: true,
+  },
+  server: {
+    allowedHosts: true,
+  },
   optimizeDeps: {
     exclude: ["@mlc-ai/web-llm"],
   },
