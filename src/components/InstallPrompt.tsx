@@ -18,7 +18,7 @@ export function InstallPrompt() {
   if (!show) return null;
 
   return (
-    <div className="glass-card overflow-hidden rounded-2xl border-l-2 border-l-[#ff7a59]">
+    <div className="glass-card overflow-hidden rounded-lg border-l-2 border-l-mark">
       <div className="p-4">
         <div className="mb-2 flex items-start justify-between gap-2">
           <p className="text-primary text-sm font-semibold">Install mApp</p>

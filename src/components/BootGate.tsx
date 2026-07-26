@@ -49,7 +49,7 @@ export function BootGate({ children }: { children: React.ReactNode }) {
   if (state.status === "loading") {
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center gap-3 px-6 text-center">
-        <div className="border-white/10 h-8 w-8 animate-spin rounded-full border-2 border-t-[#ff7a59]" />
+        <div className="border-rule h-8 w-8 animate-spin rounded-full border-2 border-t-mark" />
         <p className="text-muted text-sm">Loading mApp…</p>
       </div>
     );
