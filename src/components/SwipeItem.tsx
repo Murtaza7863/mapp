@@ -14,6 +14,8 @@ interface Props {
   item: Item;
   category?: Category;
   parentFolderName?: string;
+  /** Extra command-center reason (e.g. chase nudge) */
+  reason?: string;
   onDone: () => void;
   onSnooze: () => void;
   onEdit: () => void;
@@ -26,6 +28,7 @@ export function SwipeItem({
   item,
   category,
   parentFolderName,
+  reason,
   onDone,
   onSnooze,
   onEdit,
@@ -215,6 +218,11 @@ export function SwipeItem({
             {item.type === "follow-up" && item.nextAction && (
               <p className="text-amber-400/80 mt-0.5 truncate text-[11px]">
                 → {item.nextAction}
+              </p>
+            )}
+            {reason && (
+              <p className="text-amber-400/80 mt-0.5 truncate text-[11px]">
+                {reason}
               </p>
             )}
             {item.notes && !compact && (

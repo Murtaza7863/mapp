@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 import type { ParseDumpResult } from "../lib/brain-dump/types";
+import type { FeedEntry, FeedFocus } from "../lib/feed";
 import type { Item } from "../types";
 
 import { EventDeadlinesSection } from "../components/EventDeadlinesSection";
@@ -9,8 +10,8 @@ import { StarIcon } from "../components/icons";
 import { ItemForm, SnoozeSheet } from "../components/ItemForm";
 import { LoadingView } from "../components/LoadingView";
 import { PlotBar } from "../components/PlotBar";
-import { SuggestionStrip } from "../components/SuggestionStrip";
 import { SwipeItem } from "../components/SwipeItem";
+import { ThreadActions } from "../components/ThreadActions";
 import { TodayStats } from "../components/TodayStats";
 import {
   EmptyState,
@@ -27,10 +28,10 @@ import { buildEventDeadlineEntries } from "../lib/event-deadlines";
 import {
   buildCommandFeed,
   BUCKET_LABELS,
+  filterFeedByFocus,
   groupFeedByArea,
   groupFeedByBucket,
 } from "../lib/feed";
-import { buildSuggestions } from "../lib/pipeline";
 import { setLastCategoryId } from "../lib/preferences";
 import { computeTodaySummary } from "../lib/stats";
 
@@ -55,7 +56,7 @@ export function TodayView() {
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState<Item | null>(null);
   const [snoozeItem, setSnoozeItem] = useState<Item | null>(null);
-  const [priorityOnly, setPriorityOnly] = useState(false);
+  const [feedFocus, setFeedFocus] = useState<FeedFocus | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("feed");
 
   const folderNames = useMemo(() => {
@@ -66,14 +67,14 @@ export function TodayView() {
     return map;
   }, [items]);
 
-  const suggestions = useMemo(() => buildSuggestions(items), [items]);
   const summary = useMemo(
     () => computeTodaySummary(items, categories),
     [items, categories],
   );
+  const fullFeed = useMemo(() => buildCommandFeed(items), [items]);
   const feed = useMemo(
-    () => buildCommandFeed(items, { priorityOnly }),
-    [items, priorityOnly],
+    () => filterFeedByFocus(fullFeed, feedFocus),
+    [fullFeed, feedFocus],
   );
 
   const byArea = useMemo(
@@ -96,6 +97,11 @@ export function TodayView() {
   const eventDeadlineCount = useMemo(
     () => buildEventDeadlineEntries(items).length,
     [items],
+  );
+
+  const chaseCount = useMemo(
+    () => fullFeed.filter((e) => e.bucket === "chase").length,
+    [fullFeed],
   );
 
   const handlePlot = async (result: ParseDumpResult) => {
@@ -135,46 +141,56 @@ export function TodayView() {
     );
   }
 
-  const renderItem = (item: Item) => (
-    <SwipeItem
-      key={item.id}
-      item={item}
-      category={getCategory(item.categoryId)}
-      parentFolderName={
-        item.parentId ? folderNames.get(item.parentId) : undefined
-      }
-      showType
-      {...handlers}
-      onDone={() => handlers.onDone(item)}
-      onSnooze={() => handlers.onSnooze(item)}
-      onEdit={() => handlers.onEdit(item)}
-      onDelete={() => handlers.onDelete(item)}
-    />
-  );
+  const renderEntry = (entry: FeedEntry) => {
+    const { item, reason, bucket } = entry;
+    return (
+      <div key={item.id}>
+        <SwipeItem
+          item={item}
+          category={getCategory(item.categoryId)}
+          parentFolderName={
+            item.parentId ? folderNames.get(item.parentId) : undefined
+          }
+          reason={reason}
+          showType
+          onDone={() => handlers.onDone(item)}
+          onSnooze={() => handlers.onSnooze(item)}
+          onEdit={() => handlers.onEdit(item)}
+          onDelete={() => handlers.onDelete(item)}
+        />
+        {bucket === "chase" && (
+          <ThreadActions
+            item={item}
+            onUpdate={(changes) => {
+              void updateItem(item.id, changes).catch(actionError);
+            }}
+          />
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="view-page">
       <PageHeader
         title="Command center"
         subtitle={
-          feed.length + suggestions.length === 0
+          fullFeed.length === 0
             ? "Nothing active"
-            : `${feed.length + suggestions.length} active`
+            : feedFocus
+              ? `${feed.length} focused · ${fullFeed.length} active`
+              : `${fullFeed.length} active`
         }
         showDate
       />
 
-      <TodayStats summary={summary} />
+      <TodayStats
+        summary={summary}
+        focus={feedFocus}
+        onFocusChange={setFeedFocus}
+      />
 
       <PlotBar categories={categories} onParsed={handlePlot} />
-
-      <SuggestionStrip
-        suggestions={suggestions}
-        onSelect={(id) => {
-          const item = items.find((i) => i.id === id);
-          if (item) setEditItem(item);
-        }}
-      />
 
       <EventDeadlinesSection
         items={items}
@@ -185,10 +201,13 @@ export function TodayView() {
         }}
       />
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <FilterPill
-          active={viewMode === "feed"}
-          onClick={() => setViewMode("feed")}
+          active={viewMode === "feed" && feedFocus === null}
+          onClick={() => {
+            setViewMode("feed");
+            setFeedFocus(null);
+          }}
         >
           All active
         </FilterPill>
@@ -199,22 +218,43 @@ export function TodayView() {
           By area
         </FilterPill>
         <FilterPill
-          active={priorityOnly}
-          onClick={() => setPriorityOnly(!priorityOnly)}
+          active={feedFocus === "chase"}
+          onClick={() =>
+            setFeedFocus((f) => (f === "chase" ? null : "chase"))
+          }
+        >
+          Nudge{chaseCount > 0 ? ` · ${chaseCount}` : ""}
+        </FilterPill>
+        <FilterPill
+          active={feedFocus === "priority"}
+          onClick={() =>
+            setFeedFocus((f) => (f === "priority" ? null : "priority"))
+          }
         >
           <span className="inline-flex items-center gap-1">
             <StarIcon filled className="h-3 w-3" />
             Priority
           </span>
         </FilterPill>
+        {chaseCount > 0 && (
+          <Link
+            to="/follow-ups"
+            className="text-zinc-500 ml-auto text-[11px] font-medium"
+          >
+            All threads
+          </Link>
+        )}
       </div>
 
-      {feed.length === 0 &&
-      suggestions.length === 0 &&
-      eventDeadlineCount === 0 ? (
+      {fullFeed.length === 0 && eventDeadlineCount === 0 ? (
         <EmptyState
           title="Clear"
           description="Plot something above to get started"
+        />
+      ) : feed.length === 0 ? (
+        <EmptyState
+          title="Nothing in this focus"
+          description="Tap All active or another summary chip"
         />
       ) : viewMode === "feed" ? (
         <div className="page-block">
@@ -227,7 +267,7 @@ export function TodayView() {
                   count={entries.length}
                 />
                 <div className="item-list">
-                  {entries.map(({ item }) => renderItem(item))}
+                  {entries.map((entry) => renderEntry(entry))}
                 </div>
               </section>
             );
@@ -239,7 +279,7 @@ export function TodayView() {
             <section key={areaName} className="section-block">
               <SectionHeader title={areaName} count={entries.length} />
               <div className="item-list">
-                {entries.map(({ item }) => renderItem(item))}
+                {entries.map((entry) => renderEntry(entry))}
               </div>
             </section>
           ))}

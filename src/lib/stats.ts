@@ -38,7 +38,10 @@ export function computeTodaySummary(
     (i) => i.type !== "routine" && isDueToday(i) && !isOverdue(i),
   ).length;
   const routines = items.filter(
-    (i) => i.type === "routine" && i.status === "pending",
+    (i) =>
+      i.type === "routine" &&
+      i.status === "pending" &&
+      (isDueToday(i) || isOverdue(i)),
   ).length;
   const followUps = items.filter(
     (i) => i.type === "follow-up" && i.status === "pending",

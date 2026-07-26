@@ -1,16 +1,26 @@
+import { addDays } from "date-fns";
+
 import type { Item, PipelineStage } from "../types";
 
+import { STALE_DAYS } from "../lib/pipeline";
 import { PIPELINE_STAGE_LABELS } from "../types";
 
 const QUICK_ACTIONS: {
   label: string;
   stage: PipelineStage;
   bumpContact?: boolean;
+  /** Schedule a look-back so deferral always resurfaces */
+  scheduleCheckBack?: boolean;
 }[] = [
-  { label: "Bump sent", stage: "waiting", bumpContact: true },
+  {
+    label: "Bump sent",
+    stage: "waiting",
+    bumpContact: true,
+    scheduleCheckBack: true,
+  },
   { label: "They replied", stage: "scheduling", bumpContact: true },
   { label: "Your turn", stage: "my_turn" },
-  { label: "Revisit later", stage: "deferred" },
+  { label: "Revisit later", stage: "deferred", scheduleCheckBack: true },
 ];
 
 interface Props {
@@ -21,11 +31,18 @@ interface Props {
 export function ThreadActions({ item, onUpdate }: Props) {
   if (item.type !== "follow-up" || item.status === "done") return null;
 
-  const apply = (stage: PipelineStage, bumpContact?: boolean) => {
-    const now = new Date().toISOString();
+  const apply = (
+    stage: PipelineStage,
+    bumpContact?: boolean,
+    scheduleCheckBack?: boolean,
+  ) => {
+    const now = new Date();
     onUpdate({
       pipelineStage: stage,
-      ...(bumpContact ? { lastContactAt: now } : {}),
+      ...(bumpContact ? { lastContactAt: now.toISOString() } : {}),
+      ...(scheduleCheckBack
+        ? { checkBackAt: addDays(now, STALE_DAYS).toISOString() }
+        : {}),
     });
   };
 
@@ -35,7 +52,9 @@ export function ThreadActions({ item, onUpdate }: Props) {
         <button
           key={action.label}
           type="button"
-          onClick={() => apply(action.stage, action.bumpContact)}
+          onClick={() =>
+            apply(action.stage, action.bumpContact, action.scheduleCheckBack)
+          }
           className={`min-h-[36px] rounded-lg px-2.5 py-1.5 text-[11px] font-medium ${
             item.pipelineStage === action.stage
               ? "bg-violet-500/20 text-violet-200"

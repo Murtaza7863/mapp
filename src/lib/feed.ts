@@ -1,7 +1,10 @@
 import { parseISO } from "date-fns";
+
 import type { Item } from "../types";
+
 import { isDueToday, isOverdue, isUpcoming } from "./dates";
 import { isActionable } from "./items";
+import { chaseReason, needsChase } from "./pipeline";
 
 export type FeedBucket =
   | "chase"
@@ -16,6 +19,8 @@ export interface FeedEntry {
   item: Item;
   bucket: FeedBucket;
   sortKey: number;
+  /** Why this thread needs a nudge — set for chase bucket */
+  reason?: string;
 }
 
 export const BUCKET_LABELS: Record<FeedBucket, string> = {
@@ -29,6 +34,7 @@ export const BUCKET_LABELS: Record<FeedBucket, string> = {
 };
 
 const FEED_SECTION_ORDER: FeedBucket[] = [
+  "chase",
   "overdue",
   "today",
   "routine",
@@ -43,7 +49,6 @@ export function groupFeedByBucket(
   const map = new Map<FeedBucket, FeedEntry[]>();
   for (const bucket of FEED_SECTION_ORDER) map.set(bucket, []);
   for (const entry of feed) {
-    if (entry.bucket === "chase") continue;
     map.get(entry.bucket)?.push(entry);
   }
   return map;
@@ -66,13 +71,13 @@ function dueTime(item: Item): number {
 
 export function buildCommandFeed(
   items: Item[],
-  options: { priorityOnly?: boolean } = {},
+  options: { priorityOnly?: boolean; now?: Date } = {},
 ): FeedEntry[] {
-  const { priorityOnly = false } = options;
+  const { priorityOnly = false, now = new Date() } = options;
   const entries: FeedEntry[] = [];
   const seen = new Set<string>();
 
-  const add = (item: Item, bucket: FeedBucket) => {
+  const add = (item: Item, bucket: FeedBucket, reason?: string) => {
     if (seen.has(item.id)) return;
     if (priorityOnly && !item.priority) return;
     seen.add(item.id);
@@ -80,8 +85,15 @@ export function buildCommandFeed(
       item,
       bucket,
       sortKey: BUCKET_ORDER[bucket] * 1e15 + dueTime(item),
+      ...(reason ? { reason } : {}),
     });
   };
+
+  // Threads that need a nudge first — the core follow-through loop.
+  for (const item of items) {
+    if (!needsChase(item, now)) continue;
+    add(item, "chase", chaseReason(item, now));
+  }
 
   const pending = items.filter(
     (i) => i.status === "pending" && isActionable(i) && !i.parentId,
@@ -150,6 +162,9 @@ export function buildCommandFeed(
   }
 
   return entries.sort((a, b) => {
+    if (a.bucket !== b.bucket) {
+      return BUCKET_ORDER[a.bucket] - BUCKET_ORDER[b.bucket];
+    }
     if (a.item.priority !== b.item.priority) return a.item.priority ? -1 : 1;
     if (a.sortKey !== b.sortKey) return a.sortKey - b.sortKey;
     return a.item.title.localeCompare(b.item.title);
@@ -168,4 +183,28 @@ export function groupFeedByArea(
     map.set(key, list);
   }
   return map;
+}
+
+/** Summary chip → feed filter. */
+export type FeedFocus =
+  | "chase"
+  | "overdue"
+  | "today"
+  | "routine"
+  | "follow-up"
+  | "snoozed"
+  | "priority";
+
+export function filterFeedByFocus(
+  feed: FeedEntry[],
+  focus: FeedFocus | null,
+): FeedEntry[] {
+  if (!focus) return feed;
+  if (focus === "priority") return feed.filter((e) => e.item.priority);
+  if (focus === "follow-up") {
+    return feed.filter(
+      (e) => e.bucket === "chase" || e.bucket === "follow-up",
+    );
+  }
+  return feed.filter((e) => e.bucket === focus);
 }

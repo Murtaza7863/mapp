@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 
+import type { FeedFocus } from "../lib/feed";
 import type { TodaySummary } from "../lib/stats";
 
 import { CategoryIcon } from "./CategoryIcon";
@@ -14,7 +15,22 @@ const CHIP_STYLES: Record<string, string> = {
   Priority: "text-yellow-300 border-yellow-400/20 bg-yellow-400/8",
 };
 
-export function TodayStats({ summary }: { summary: TodaySummary }) {
+const CHIP_FOCUS: Record<string, FeedFocus> = {
+  Overdue: "overdue",
+  Today: "today",
+  Routines: "routine",
+  Waiting: "follow-up",
+  Snoozed: "snoozed",
+  Priority: "priority",
+};
+
+interface Props {
+  summary: TodaySummary;
+  focus?: FeedFocus | null;
+  onFocusChange?: (focus: FeedFocus | null) => void;
+}
+
+export function TodayStats({ summary, focus = null, onFocusChange }: Props) {
   const chips = [
     { label: "Overdue", value: summary.overdue },
     { label: "Today", value: summary.dueToday },
@@ -39,15 +55,38 @@ export function TodayStats({ summary }: { summary: TodaySummary }) {
         </Link>
       </div>
       <div className="flex flex-wrap gap-2">
-        {chips.map((chip) => (
-          <span
-            key={chip.label}
-            className={`stat-chip rounded-full border px-3 py-1 text-xs font-semibold ${CHIP_STYLES[chip.label]}`}
-          >
-            <span className="mr-1 opacity-70">{chip.value}</span>
-            {chip.label}
-          </span>
-        ))}
+        {chips.map((chip) => {
+          const chipFocus = CHIP_FOCUS[chip.label];
+          const active = focus === chipFocus;
+          const interactive = Boolean(onFocusChange && chipFocus);
+          const className = `stat-chip rounded-full border px-3 py-1 text-xs font-semibold ${CHIP_STYLES[chip.label]} ${
+            active ? "ring-1 ring-white/30" : ""
+          } ${interactive ? "cursor-pointer" : ""}`;
+
+          if (!interactive) {
+            return (
+              <span key={chip.label} className={className}>
+                <span className="mr-1 opacity-70">{chip.value}</span>
+                {chip.label}
+              </span>
+            );
+          }
+
+          return (
+            <button
+              key={chip.label}
+              type="button"
+              aria-pressed={active}
+              onClick={() =>
+                onFocusChange?.(active ? null : (chipFocus ?? null))
+              }
+              className={className}
+            >
+              <span className="mr-1 opacity-70">{chip.value}</span>
+              {chip.label}
+            </button>
+          );
+        })}
       </div>
       {summary.byCategory.length > 0 && (
         <div className="border-white/5 mt-3 flex flex-wrap gap-1.5 border-t pt-3">
