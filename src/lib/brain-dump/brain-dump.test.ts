@@ -2,8 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import type { Category } from "../../types";
 
-import { parseDumpWithRules, splitDumpLines } from "./rules-parser";
+import { matchFeatureIntent } from "./features";
 import { shouldUseLlm } from "./parse-dump";
+import { parseDumpWithRules, splitDumpLines } from "./rules-parser";
 import { parseModelResponse } from "./validate";
 
 const categories: Category[] = [
@@ -78,12 +79,58 @@ buy milk tomorrow`;
   });
 
   it("parses model json payloads", () => {
-    const { items } = parseModelResponse(
-      `{"items":[{"title":"Submit report","type":"deadline","categoryHint":"Work","dueAt":"2026-07-28T09:00:00.000Z","priority":false}],"clarifications":[]}`,
+    const { items, actions } = parseModelResponse(
+      `{"items":[{"title":"Submit report","type":"deadline","categoryHint":"Work","dueAt":"2026-07-28T09:00:00.000Z","priority":false}],"actions":[],"clarifications":[]}`,
       categories,
     );
     expect(items).toHaveLength(1);
     expect(items[0].categoryId).toBe("work");
+    expect(actions).toHaveLength(0);
+  });
+
+  it("tracks create-folder feature intents instead of reminders", () => {
+    const dump = "create a folder for smubia";
+    const matched = matchFeatureIntent(dump, categories);
+    expect(matched?.featureId).toBe("create_folder");
+    expect(matched?.title).toBe("Smubia");
+
+    const { items, actions } = parseDumpWithRules(dump, categories, NOW);
+    expect(items).toHaveLength(0);
+    expect(actions).toHaveLength(1);
+    expect(actions[0].kind).toBe("create_folder");
+    expect(actions[0].title).toBe("Smubia");
+  });
+
+  it("tracks folder-in-workspace phrasing as a folder action", () => {
+    const dump = "create folder in the smubia workspace";
+    const { items, actions } = parseDumpWithRules(dump, categories, NOW);
+    expect(items).toHaveLength(0);
+    expect(actions).toHaveLength(1);
+    expect(actions[0].kind).toBe("create_folder");
+    expect(actions[0].title).toBe("Smubia");
+  });
+
+  it("tracks create-area feature intents", () => {
+    const { items, actions } = parseDumpWithRules(
+      "create an area called Research",
+      categories,
+      NOW,
+    );
+    expect(items).toHaveLength(0);
+    expect(actions).toHaveLength(1);
+    expect(actions[0].kind).toBe("create_area");
+    expect(actions[0].title).toBe("Research");
+  });
+
+  it("recovers feature actions buried in model item titles", () => {
+    const { items, actions } = parseModelResponse(
+      `{"items":[{"title":"create a folder for smubia","type":"deadline"}],"clarifications":[]}`,
+      categories,
+    );
+    expect(items).toHaveLength(0);
+    expect(actions).toHaveLength(1);
+    expect(actions[0].kind).toBe("create_folder");
+    expect(actions[0].title).toBe("Smubia");
   });
 });
 
@@ -101,6 +148,10 @@ describe("shouldUseLlm", () => {
 
   it("skips llm for short single tasks", () => {
     expect(shouldUseLlm("buy milk tomorrow", 1)).toBe(false);
+  });
+
+  it("skips llm when feature actions already cover the dump", () => {
+    expect(shouldUseLlm("create a folder for smubia", 0, 1)).toBe(false);
   });
 });
 

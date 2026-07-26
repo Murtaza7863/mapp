@@ -48,7 +48,7 @@ export function TodayView() {
     snooze,
     unsnooze,
   } = useItems();
-  const { categories, getCategory } = useCategories();
+  const { categories, getCategory, addCategory } = useCategories();
   const { deleteWithUndo } = useUndo();
   const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -100,13 +100,35 @@ export function TodayView() {
 
   const handlePlot = async (result: ParseDumpResult) => {
     try {
-      const created = await applyProposals(result.items, categories, addItem);
-      if (created.length === 0) return;
-      if (created[0]?.categoryId) setLastCategoryId(created[0].categoryId);
-      toast(
-        `Plotted ${created.length} item${created.length === 1 ? "" : "s"}`,
-        { kind: "success" },
-      );
+      const applied = await applyProposals(result.items, categories, addItem, {
+        actions: result.actions,
+        addCategory,
+      });
+      const total =
+        applied.items.length +
+        applied.foldersCreated +
+        applied.areasCreated;
+      if (total === 0) return;
+      if (applied.items[0]?.categoryId) {
+        setLastCategoryId(applied.items[0].categoryId);
+      }
+      const parts: string[] = [];
+      if (applied.foldersCreated > 0) {
+        parts.push(
+          `${applied.foldersCreated} folder${applied.foldersCreated === 1 ? "" : "s"}`,
+        );
+      }
+      if (applied.areasCreated > 0) {
+        parts.push(
+          `${applied.areasCreated} area${applied.areasCreated === 1 ? "" : "s"}`,
+        );
+      }
+      if (applied.items.length > 0) {
+        parts.push(
+          `${applied.items.length} item${applied.items.length === 1 ? "" : "s"}`,
+        );
+      }
+      toast(`Plotted ${parts.join(" + ")}`, { kind: "success" });
     } catch (err) {
       toast(err instanceof Error ? err.message : "Could not save items", {
         kind: "error",

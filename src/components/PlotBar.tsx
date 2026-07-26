@@ -46,8 +46,8 @@ export function PlotBar({ categories, onParsed }: Props) {
         onModelProgress: () => setPhase("loading-model"),
       });
 
-      if (parsed.items.length === 0) {
-        setError("Nothing to plot — try one task per line.");
+      if (parsed.items.length === 0 && parsed.actions.length === 0) {
+        setError("Nothing to plot — try a task or app action per line.");
         setPhase("idle");
         return;
       }
@@ -113,16 +113,18 @@ export function PlotBar({ categories, onParsed }: Props) {
       {phase === "confirm" && result && (
         <ParseConfirmSheet
           items={result.items}
+          actions={result.actions}
           clarifications={result.clarifications}
           source={result.source}
           categories={categories}
-          onChange={(items) => setResult({ ...result, items })}
+          onChangeItems={(items) => setResult({ ...result, items })}
+          onChangeActions={(actions) => setResult({ ...result, actions })}
           onClose={() => {
             setPhase("idle");
             setResult(null);
           }}
           onConfirm={() => {
-            onParsed({ ...result, items: result.items });
+            onParsed(result);
             setValue("");
             setPhase("idle");
             setResult(null);

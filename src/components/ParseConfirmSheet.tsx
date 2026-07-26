@@ -1,6 +1,10 @@
 import { format, parseISO } from "date-fns";
 
-import type { ProposedItem } from "../lib/brain-dump/types";
+import { featureLabel } from "../lib/brain-dump/features";
+import type {
+  ProposedFeatureAction,
+  ProposedItem,
+} from "../lib/brain-dump/types";
 import type { Category } from "../types";
 
 import { ITEM_TYPE_LABELS } from "../types";
@@ -8,10 +12,12 @@ import { DatePickerField } from "./DatePickerField";
 
 interface Props {
   items: ProposedItem[];
+  actions: ProposedFeatureAction[];
   clarifications: string[];
   source: "llm" | "rules";
   categories: Category[];
-  onChange: (items: ProposedItem[]) => void;
+  onChangeItems: (items: ProposedItem[]) => void;
+  onChangeActions: (actions: ProposedFeatureAction[]) => void;
   onConfirm: () => void;
   onClose: () => void;
   saving?: boolean;
@@ -19,21 +25,48 @@ interface Props {
 
 export function ParseConfirmSheet({
   items,
+  actions,
   clarifications,
   source,
   categories,
-  onChange,
+  onChangeItems,
+  onChangeActions,
   onConfirm,
   onClose,
   saving,
 }: Props) {
-  const selectedCount = items.filter((i) => i.selected).length;
+  const selectedItems = items.filter((i) => i.selected).length;
+  const selectedActions = actions.filter((a) => a.selected).length;
+  const selectedCount = selectedItems + selectedActions;
 
   const updateItem = (id: string, patch: Partial<ProposedItem>) => {
-    onChange(
+    onChangeItems(
       items.map((item) => (item.id === id ? { ...item, ...patch } : item)),
     );
   };
+
+  const updateAction = (id: string, patch: Partial<ProposedFeatureAction>) => {
+    onChangeActions(
+      actions.map((action) =>
+        action.id === id ? { ...action, ...patch } : action,
+      ),
+    );
+  };
+
+  const confirmLabel = (() => {
+    if (saving) return "Saving…";
+    const parts: string[] = [];
+    if (selectedActions > 0) {
+      parts.push(
+        `${selectedActions} action${selectedActions === 1 ? "" : "s"}`,
+      );
+    }
+    if (selectedItems > 0) {
+      parts.push(`${selectedItems} item${selectedItems === 1 ? "" : "s"}`);
+    }
+    if (parts.length === 0) return "Add nothing";
+    return `Add ${parts.join(" + ")}`;
+  })();
 
   return (
     <div
@@ -76,6 +109,61 @@ export function ParseConfirmSheet({
           )}
 
           <div className="space-y-3">
+            {actions.map((action) => (
+              <div key={action.id} className="item-card rounded-2xl p-3.5">
+                <div className="mb-2 flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    checked={action.selected}
+                    onChange={(e) =>
+                      updateAction(action.id, { selected: e.target.checked })
+                    }
+                    className="mt-1"
+                  />
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <input
+                      value={action.title}
+                      onChange={(e) =>
+                        updateAction(action.id, {
+                          title: e.target.value,
+                          summary:
+                            action.kind === "create_folder"
+                              ? `New folder “${e.target.value}”`
+                              : `New area “${e.target.value}”`,
+                        })
+                      }
+                      className="input-field w-full rounded-lg px-3 py-2 text-sm"
+                    />
+                    {action.kind === "create_folder" && (
+                      <select
+                        value={action.categoryId ?? ""}
+                        onChange={(e) =>
+                          updateAction(action.id, {
+                            categoryId: e.target.value,
+                          })
+                        }
+                        className="input-field w-full rounded-lg px-2 py-2 text-xs"
+                      >
+                        {categories.map((cat) => (
+                          <option key={cat.id} value={cat.id}>
+                            {cat.name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                    <div className="text-zinc-500 flex flex-wrap gap-2 text-[11px]">
+                      <span className="bg-emerald-400/10 text-emerald-300 rounded-md px-2 py-1">
+                        {featureLabel(action.kind)}
+                      </span>
+                      <span className="bg-white/5 rounded-md px-2 py-1">
+                        {action.summary}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+
             {items.map((item) => (
               <div key={item.id} className="item-card rounded-2xl p-3.5">
                 <div className="mb-2 flex items-start gap-3">
@@ -167,9 +255,7 @@ export function ParseConfirmSheet({
             onClick={onConfirm}
             className="btn-primary mt-5 w-full rounded-xl py-3.5 text-sm font-medium disabled:opacity-40"
           >
-            {saving
-              ? "Saving…"
-              : `Add ${selectedCount} item${selectedCount === 1 ? "" : "s"}`}
+            {confirmLabel}
           </button>
         </div>
       </div>

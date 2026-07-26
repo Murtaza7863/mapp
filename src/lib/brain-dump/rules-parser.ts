@@ -4,6 +4,7 @@ import type { Category, ItemType } from "../../types";
 import { parseQuickAdd } from "../quickadd";
 
 import { extractContact } from "./contacts";
+import { featureIntentToProposal, matchFeatureIntent } from "./features";
 import {
   CONTEXT_MERGE_SEP,
   isValidTask,
@@ -11,7 +12,11 @@ import {
   parseContextClause,
   polishTitle,
 } from "./title-cleanup";
-import type { ParseDumpResult, ProposedItem } from "./types";
+import type {
+  ParseDumpResult,
+  ProposedFeatureAction,
+  ProposedItem,
+} from "./types";
 import { resolveCategoryId } from "./validate";
 
 const FOLLOW_UP_RE =
@@ -177,14 +182,27 @@ export function parseDumpWithRules(
 ): ParseDumpResult {
   const lines = splitDumpLines(text);
   const items: ProposedItem[] = [];
-  const seen = new Set<string>();
+  const actions: ProposedFeatureAction[] = [];
+  const seenItems = new Set<string>();
+  const seenActions = new Set<string>();
 
   for (const line of lines) {
+    const feature = matchFeatureIntent(line, categories);
+    if (feature) {
+      const action = featureIntentToProposal(feature, categories);
+      const key = `${action.kind}|${action.title.toLowerCase()}|${action.categoryHint ?? ""}`;
+      if (!seenActions.has(key)) {
+        seenActions.add(key);
+        actions.push(action);
+      }
+      continue;
+    }
+
     const proposal = lineToProposal(line, categories, now);
     if (!proposal) continue;
     const key = `${proposal.title.toLowerCase()}|${proposal.dueAt ?? ""}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
+    if (seenItems.has(key)) continue;
+    seenItems.add(key);
     items.push(proposal);
   }
 
@@ -195,5 +213,5 @@ export function parseDumpWithRules(
     );
   }
 
-  return { items, clarifications, source: "rules" };
+  return { items, actions, clarifications, source: "rules" };
 }
