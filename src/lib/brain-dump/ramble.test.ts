@@ -7,7 +7,6 @@ import { expandLineSegments } from "./line-split";
 import {
   normalizePlotLine,
   parseFolderCompoundRamble,
-  splitRambleSentences,
 } from "./ramble";
 import { parseDumpWithRules } from "./rules-parser";
 
