@@ -3,9 +3,9 @@ import { useRef, useState } from "react";
 
 import type { Category, Item } from "../types";
 
-import { formatGpdDue } from "../lib/climb";
 import { getChildGroup } from "../lib/containers";
 import { formatDue, formatSnoozedUntil, isOverdue } from "../lib/dates";
+import { formatDeadlineDate } from "../lib/event-deadlines";
 import { gpdDueFromEvent, stageLabel } from "../lib/pipeline";
 import { ITEM_TYPE_LABELS } from "../types";
 import { CheckIcon, ClockIcon, CloseIcon, StarIcon } from "./icons";
@@ -184,8 +184,8 @@ export function SwipeItem({
               )}
               {item.linkedEventAt && item.type === "follow-up" && (
                 <span className="text-violet-400/70">
-                  GPD{" "}
-                  {formatGpdDue(
+                  Prep{" "}
+                  {formatDeadlineDate(
                     gpdDueFromEvent(item.linkedEventAt).toISOString(),
                   )}
                 </span>

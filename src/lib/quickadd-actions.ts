@@ -1,10 +1,9 @@
 import type { Category, Item } from "../types";
 
 import { db } from "../db";
-import { parseContainerQuickAdd, schoolTokenToSubgroup } from "./containers";
+import { parseContainerQuickAdd } from "./containers";
 import { nextChildSortOrder } from "./projects";
 import type { ParsedQuickAdd } from "./quickadd";
-import { parseSchoolQuickAdd } from "./school";
 
 export interface QuickAddContext {
   categories: Category[];
@@ -54,23 +53,6 @@ export async function applyQuickAdd(
   const categoryId = parsed.categoryId ?? ctx.categories[0]?.id ?? "";
   const category =
     ctx.categories.find((c) => c.id === categoryId) ?? ctx.categories[0];
-
-  const school = parseSchoolQuickAdd(parsed.title);
-  if (school && category) {
-    const schoolCat =
-      ctx.categories.find((c) => c.name.toLowerCase() === "school") ?? category;
-    const mod = await ensureFolder(ctx, schoolCat, school.moduleName);
-    return ctx.addItem({
-      title: school.taskTitle,
-      type: "deadline",
-      categoryId: schoolCat.id,
-      parentId: mod.id,
-      childGroup: school.childGroup,
-      sortOrder: nextChildSortOrder([...ctx.items, mod], mod.id),
-      ...(parsed.dueAt ? { dueAt: parsed.dueAt } : {}),
-      priority: parsed.priority,
-    });
-  }
 
   if (category) {
     const container = parseContainerQuickAdd(
@@ -122,5 +104,3 @@ export async function applyQuickAdd(
       : {}),
   });
 }
-
-export { schoolTokenToSubgroup };

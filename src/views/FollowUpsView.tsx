@@ -177,7 +177,7 @@ export function FollowUpsView() {
         <EmptyState
           icon={<ClockIcon className="h-5 w-5" />}
           title={staleOnly ? "No stale threads" : "No open threads"}
-          description="Track company outreach, CLIMB submissions, and look-back-later deals"
+          description="Track follow-up threads, outreach, and look-back-later items"
         />
       ) : (
         STAGE_ORDER.map((stage) => {

@@ -11,9 +11,9 @@ import {
 
 describe("projects", () => {
   const parent = createItem({
-    title: "SMUBIA outreach",
+    title: "Outreach campaign",
     type: "project",
-    categoryId: "smubia",
+    categoryId: "personal",
     goalCount: 5,
   });
 
@@ -22,22 +22,22 @@ describe("projects", () => {
     expect(isContainer(createItem({ title: "x" }))).toBe(false);
   });
 
-  it("lists root projects excluding school category when asked", () => {
-    const schoolMod = createItem({
-      title: "CS101",
+  it("lists root projects excluding a category when asked", () => {
+    const workFolder = createItem({
+      title: "Client work",
       type: "project",
-      categoryId: "school",
+      categoryId: "work",
     });
     const personal = createItem({
       title: "Side project",
       type: "project",
       categoryId: "personal",
     });
-    const roots = getRootProjects([parent, schoolMod, personal], {
-      excludeCategoryId: "school",
+    const roots = getRootProjects([parent, workFolder, personal], {
+      excludeCategoryId: "work",
     });
     expect(roots.map((p) => p.title).sort()).toEqual(
-      ["SMUBIA outreach", "Side project"].sort(),
+      ["Outreach campaign", "Side project"].sort(),
     );
   });
 

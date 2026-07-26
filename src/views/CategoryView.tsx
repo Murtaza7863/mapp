@@ -16,7 +16,7 @@ import {
   type CategoryIconKey,
 } from "../components/icons";
 import { ItemForm, SnoozeSheet } from "../components/ItemForm";
-import { SchoolQuickAddHelp } from "../components/SchoolQuickAddHelp";
+import { SubgroupQuickAddHelp } from "../components/SubgroupQuickAddHelp";
 import { SwipeItem } from "../components/SwipeItem";
 import { PageHeader, SectionHeader } from "../components/ui";
 import { useCategories } from "../hooks/useCategories";
@@ -230,7 +230,7 @@ export function CategoryView() {
             <input
               value={newCatName}
               onChange={(e) => setNewCatName(e.target.value)}
-              placeholder="e.g. SMUBIA"
+              placeholder="e.g. Side project"
               className="input-field flex-1 rounded-xl px-3 py-2 text-sm"
             />
             <button
@@ -326,7 +326,13 @@ export function CategoryView() {
 
       {selectedId !== "all" && selectedCategory && (
         <>
-          {selectedCategory.name === "School" && <SchoolQuickAddHelp />}
+          {selectedCategory.subgroups &&
+            selectedCategory.subgroups.length > 0 && (
+              <SubgroupQuickAddHelp
+                categoryName={selectedCategory.name}
+                subgroups={selectedCategory.subgroups}
+              />
+            )}
           <section className="section-block">
             <SectionHeader
               title="Folders"
@@ -353,24 +359,6 @@ export function CategoryView() {
               renderFolders(containersForArea, selectedCategory)
             )}
           </section>
-
-          {selectedCategory.name === "SMUBIA" && (
-            <Link
-              to="/follow-ups"
-              className="border-violet-500/20 bg-violet-500/10 text-violet-300 block rounded-xl border px-4 py-3 text-center text-sm"
-            >
-              Open outreach threads
-            </Link>
-          )}
-
-          {selectedCategory.name === "CLIMB" && (
-            <Link
-              to="/climb"
-              className="border-violet-500/20 bg-violet-500/10 text-violet-300 block rounded-xl border px-4 py-3 text-center text-sm"
-            >
-              Open CLIMB dashboard
-            </Link>
-          )}
 
           <section className="section-block">
             <SectionHeader title="Tasks" count={looseItems.length} />

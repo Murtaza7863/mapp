@@ -19,7 +19,7 @@ export default defineConfig({
         name: "mApp",
         short_name: "mApp",
         description:
-          "A new way to stay organised — map school, life, and outreach in one mobile app.",
+          "A new way to stay organised — map tasks, threads, and routines in one mobile app.",
         theme_color: "#0b0c11",
         background_color: "#0b0c11",
         display: "standalone",

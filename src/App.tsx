@@ -12,8 +12,8 @@ import { ToastProvider } from "./hooks/useToast";
 import { UndoProvider } from "./hooks/useUndo";
 import { CalendarView } from "./views/CalendarView";
 import { CategoryView } from "./views/CategoryView";
-import { ClimbView } from "./views/ClimbView";
 import { ContainerDetailView } from "./views/ContainerDetailView";
+import { EventDeadlinesView } from "./views/EventDeadlinesView";
 import { FollowUpsView } from "./views/FollowUpsView";
 import { HistoryView } from "./views/HistoryView";
 import { InsightsView } from "./views/InsightsView";
@@ -45,7 +45,8 @@ function AppRoutes() {
         <Route path="school" element={<SchoolView />} />
         <Route path="school/:id" element={<SchoolFolderRedirect />} />
         <Route path="follow-ups" element={<FollowUpsView />} />
-        <Route path="climb" element={<ClimbView />} />
+        <Route path="deadlines" element={<EventDeadlinesView />} />
+        <Route path="climb" element={<Navigate to="/deadlines" replace />} />
         <Route path="search" element={<SearchView />} />
         <Route path="notes" element={<NotesView />} />
         <Route path="history" element={<HistoryView />} />

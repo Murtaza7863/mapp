@@ -2,15 +2,15 @@
 
 **A new way to stay organised.**
 
-mApp maps your life into areas, tasks, threads, and routines — school modules, personal habits, CLIMB deadlines, SMUBIA outreach — in one mobile-first command center. Install it on your Home Screen, use it offline, and keep your data on your device.
+mApp maps your life into areas, tasks, threads, and routines — in one mobile-first command center. Install it on your Home Screen, use it offline, and keep your data on your device.
 
 ## What it is
 
 Not a generic todo list. mApp is built for real workflows:
 
-- **Command center** — overdue, today, threads that need a nudge, CLIMB GPD deadlines
-- **Areas** — School, Personal, CLIMB, SMUBIA with folders and subgroups
-- **Threads** — outreach pipelines with quick actions (bump sent, they replied, your turn)
+- **Command center** — overdue, today, threads that need a nudge, event prep deadlines
+- **Areas** — organise work and life with folders and optional subgroups
+- **Threads** — follow-up pipelines with quick actions (sent, waiting, your turn)
 - **Offline-first** — tasks live in IndexedDB; auto-backup on device; export anytime
 
 ## Tech

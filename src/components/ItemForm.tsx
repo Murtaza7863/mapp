@@ -342,7 +342,7 @@ export function ItemForm({
                     value={contactName}
                     onChange={(e) => setContactName(e.target.value)}
                     className="input-field w-full rounded-xl px-3 py-2.5"
-                    placeholder="e.g. Google, CLIMB org"
+                    placeholder="e.g. Acme Corp"
                   />
                 </div>
                 <div>
@@ -371,7 +371,7 @@ export function ItemForm({
                     value={nextAction}
                     onChange={(e) => setNextAction(e.target.value)}
                     className="input-field w-full rounded-xl px-3 py-2.5"
-                    placeholder="e.g. Send bump email, fix GPD doc"
+                    placeholder="e.g. Send follow-up email"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
@@ -398,7 +398,7 @@ export function ItemForm({
                 </div>
                 <div>
                   <label className="section-label mb-1.5 block">
-                    Linked event (CLIMB)
+                    Linked event
                   </label>
                   <DatePickerField
                     value={linkedEventDate}
@@ -407,7 +407,7 @@ export function ItemForm({
                   />
                   {linkedEventDate && (
                     <p className="text-zinc-600 mt-1 text-[11px]">
-                      GPD due ~{" "}
+                      Prep due ~{" "}
                       {format(
                         gpdDueFromEvent(
                           new Date(`${linkedEventDate}T00:00`).toISOString(),

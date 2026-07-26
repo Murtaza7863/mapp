@@ -6,11 +6,12 @@ import { applyQuickAdd } from "./quickadd-actions";
 describe("applyQuickAdd", () => {
   const categories = [
     {
-      id: "school",
-      name: "School",
+      id: "work",
+      name: "Work",
       color: "#3b82f6",
       icon: "briefcase",
       sortOrder: 0,
+      subgroups: ["Tasks", "Projects"],
     },
     {
       id: "personal",
@@ -21,7 +22,7 @@ describe("applyQuickAdd", () => {
     },
   ];
 
-  it("creates module and homework from school syntax", async () => {
+  it("creates folder and task from subgroup syntax", async () => {
     const created: ReturnType<typeof createItem>[] = [];
     const addItem = async (input: Parameters<typeof createItem>[0]) => {
       const item = createItem(input);
@@ -31,7 +32,7 @@ describe("applyQuickAdd", () => {
 
     await applyQuickAdd(
       {
-        title: "CS101 homework: Problem set 4",
+        title: "Q3 planning tasks: Draft roadmap",
         priority: false,
       },
       { categories, items: [], addItem },
@@ -39,9 +40,9 @@ describe("applyQuickAdd", () => {
 
     expect(created).toHaveLength(2);
     expect(created[0].type).toBe("project");
-    expect(created[0].title).toBe("CS101");
+    expect(created[0].title).toBe("Q3 planning");
     expect(created[1].parentId).toBe(created[0].id);
-    expect(created[1].childGroup).toBe("Homework");
+    expect(created[1].childGroup).toBe("Tasks");
   });
 
   it("seeds follow-up defaults", async () => {
@@ -54,7 +55,7 @@ describe("applyQuickAdd", () => {
 
     await applyQuickAdd(
       {
-        title: "Google outreach",
+        title: "Acme Corp follow-up",
         type: "follow-up",
         categoryId: "personal",
         priority: false,

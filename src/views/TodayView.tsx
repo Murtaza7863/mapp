@@ -4,7 +4,7 @@ import { useSearchParams } from "react-router-dom";
 import type { ParsedQuickAdd } from "../lib/quickadd";
 import type { Item } from "../types";
 
-import { ClimbSection } from "../components/ClimbSection";
+import { EventDeadlinesSection } from "../components/EventDeadlinesSection";
 import { StarIcon } from "../components/icons";
 import { QuickAdd, ItemForm, SnoozeSheet } from "../components/ItemForm";
 import { LoadingView } from "../components/LoadingView";
@@ -21,7 +21,7 @@ import { useCategories } from "../hooks/useCategories";
 import { useItems } from "../hooks/useItems";
 import { useToast } from "../hooks/useToast";
 import { useUndo } from "../hooks/useUndo";
-import { buildClimbEntries, getClimbCategoryId } from "../lib/climb";
+import { buildEventDeadlineEntries } from "../lib/event-deadlines";
 import {
   buildCommandFeed,
   BUCKET_LABELS,
@@ -92,10 +92,10 @@ export function TodayView() {
     setSearchParams({}, { replace: true });
   }, [deepLinkId, items, setSearchParams]);
 
-  const climbCount = useMemo(() => {
-    const climbId = getClimbCategoryId(categories);
-    return buildClimbEntries(items, climbId).length;
-  }, [items, categories]);
+  const eventDeadlineCount = useMemo(
+    () => buildEventDeadlineEntries(items).length,
+    [items],
+  );
 
   const handleQuickAdd = async (parsed: ParsedQuickAdd) => {
     try {
@@ -188,9 +188,8 @@ export function TodayView() {
         }}
       />
 
-      <ClimbSection
+      <EventDeadlinesSection
         items={items}
-        categories={categories}
         compact
         onSelect={(id) => {
           const item = items.find((i) => i.id === id);
@@ -222,7 +221,9 @@ export function TodayView() {
         </FilterPill>
       </div>
 
-      {feed.length === 0 && suggestions.length === 0 && climbCount === 0 ? (
+      {feed.length === 0 &&
+      suggestions.length === 0 &&
+      eventDeadlineCount === 0 ? (
         <EmptyState
           title="Clear"
           description="Add something above to get started"

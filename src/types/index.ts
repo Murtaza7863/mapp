@@ -48,17 +48,17 @@ export interface Item {
   completedAt?: string;
   snoozedUntil?: string;
   waitingOn?: string;
-  /** Company or person for outreach / CLIMB / SMUBIA threads */
+  /** Company or person for follow-up threads */
   contactName?: string;
   pipelineStage?: PipelineStage;
   /** "Look back on this later" — resurfaces when due */
   checkBackAt?: string;
   lastContactAt?: string;
   nextAction?: string;
-  /** CLIMB event date — GPD deadline can be derived (10 weeks before) */
+  /** Linked event date — prep deadline can be derived (10 weeks before) */
   linkedEventAt?: string;
   reminderOffsetMinutes?: number;
-  /** Parent project / school module */
+  /** Parent project / folder */
   parentId?: string;
   sortOrder?: number;
   /** Target count for outreach-style projects (e.g. 5 new companies) */
@@ -140,14 +140,6 @@ export const REMINDER_OFFSET_OPTIONS = [
 ];
 
 export const DEFAULT_CATEGORIES: Omit<Category, "id">[] = [
-  {
-    name: "School",
-    color: "#3b82f6",
-    icon: "briefcase",
-    sortOrder: 0,
-    subgroups: ["Homework", "Exam"],
-  },
+  { name: "Work", color: "#3b82f6", icon: "briefcase", sortOrder: 0 },
   { name: "Personal", color: "#22c55e", icon: "home", sortOrder: 1 },
-  { name: "CLIMB", color: "#a855f7", icon: "mountain", sortOrder: 2 },
-  { name: "SMUBIA", color: "#f97316", icon: "pin", sortOrder: 3 },
 ];

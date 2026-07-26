@@ -28,7 +28,7 @@ const mainLinks = [
 ];
 
 const moreLinks = [
-  { to: "/climb", label: "CLIMB", Icon: MountainIcon },
+  { to: "/deadlines", label: "Event prep", Icon: MountainIcon },
   { to: "/folders", label: "All folders", Icon: FolderIcon },
   { to: "/search", label: "Search", Icon: SearchIcon },
   { to: "/notes", label: "Notes", Icon: NoteIcon },

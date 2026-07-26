@@ -11,7 +11,7 @@ describe("search", () => {
       type: "deadline",
     }),
     createItem({
-      title: "CLIMB meeting",
+      title: "Team sync",
       type: "follow-up",
       waitingOn: "Sarah",
     }),
@@ -19,9 +19,9 @@ describe("search", () => {
   ];
 
   it("finds by title", () => {
-    const results = searchItems(items, { query: "climb" });
+    const results = searchItems(items, { query: "team" });
     expect(results).toHaveLength(1);
-    expect(results[0].title).toBe("CLIMB meeting");
+    expect(results[0].title).toBe("Team sync");
   });
 
   it("finds by notes and waiting on", () => {

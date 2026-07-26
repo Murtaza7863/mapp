@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 
 import type { Item } from "../types";
 
-import { ClimbSection } from "../components/ClimbSection";
+import { EventDeadlinesSection } from "../components/EventDeadlinesSection";
 import { MountainIcon } from "../components/icons";
 import { ItemForm, SnoozeSheet } from "../components/ItemForm";
 import { SwipeItem } from "../components/SwipeItem";
@@ -11,9 +11,9 @@ import { EmptyState, PageHeader } from "../components/ui";
 import { useCategories } from "../hooks/useCategories";
 import { useItems } from "../hooks/useItems";
 import { useUndo } from "../hooks/useUndo";
-import { buildClimbEntries, getClimbCategoryId } from "../lib/climb";
+import { buildEventDeadlineEntries } from "../lib/event-deadlines";
 
-export function ClimbView() {
+export function EventDeadlinesView() {
   const {
     items,
     addItem,
@@ -30,28 +30,21 @@ export function ClimbView() {
   const [showForm, setShowForm] = useState(false);
   const [snoozeItem, setSnoozeItem] = useState<Item | null>(null);
 
-  const climbId = getClimbCategoryId(categories);
-  const entries = useMemo(
-    () => buildClimbEntries(items, climbId),
-    [items, climbId],
-  );
+  const entries = useMemo(() => buildEventDeadlineEntries(items), [items]);
 
   const threads = useMemo(
     () =>
       items.filter(
-        (i) =>
-          i.categoryId === climbId &&
-          i.type === "follow-up" &&
-          i.status !== "done",
+        (i) => i.type === "follow-up" && i.status !== "done" && i.linkedEventAt,
       ),
-    [items, climbId],
+    [items],
   );
 
   return (
     <div className="view-page">
       <PageHeader
-        title="CLIMB"
-        subtitle="Events, GPD deadlines, submissions"
+        title="Event prep"
+        subtitle="Linked events with auto-calculated prep deadlines"
         action={
           <button
             type="button"
@@ -66,14 +59,13 @@ export function ClimbView() {
       {entries.length === 0 && threads.length === 0 ? (
         <EmptyState
           icon={<MountainIcon className="h-5 w-5" />}
-          title="No CLIMB threads"
-          description="Add a follow-up with a linked event date — GPD due dates are calculated automatically (10 weeks before)."
+          title="No linked events"
+          description="Add a follow-up with a linked event date — prep deadlines are calculated automatically (10 weeks before)."
         />
       ) : (
         <>
-          <ClimbSection
+          <EventDeadlinesSection
             items={items}
-            categories={categories}
             onSelect={(id) => {
               const item = items.find((i) => i.id === id);
               if (item) setEditItem(item);
@@ -115,8 +107,6 @@ export function ClimbView() {
           categories={categories}
           item={editItem}
           defaultType="follow-up"
-          defaultCategoryId={climbId}
-          lockCategoryId={editItem ? undefined : climbId}
           onClose={() => {
             setShowForm(false);
             setEditItem(null);

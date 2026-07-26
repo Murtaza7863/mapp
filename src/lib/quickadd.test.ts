@@ -6,7 +6,13 @@ import { parseQuickAdd } from "./quickadd";
 const categories: Category[] = [
   { id: "c1", name: "Work", color: "#3b82f6", icon: "briefcase", sortOrder: 0 },
   { id: "c2", name: "Personal", color: "#22c55e", icon: "home", sortOrder: 1 },
-  { id: "c3", name: "CLIMB", color: "#a855f7", icon: "mountain", sortOrder: 2 },
+  {
+    id: "c3",
+    name: "Projects",
+    color: "#a855f7",
+    icon: "folder",
+    sortOrder: 2,
+  },
 ];
 
 // Wednesday, July 22 2026, 10:00 local time
@@ -72,9 +78,9 @@ describe("parseQuickAdd", () => {
   });
 
   it("category prefix match is case-insensitive", () => {
-    const p = parseQuickAdd("submit report #cli", categories, NOW);
+    const p = parseQuickAdd("submit report #pro", categories, NOW);
     expect(p.categoryId).toBe("c3");
-    expect(p.categoryName).toBe("CLIMB");
+    expect(p.categoryName).toBe("Projects");
     expect(p.title).toBe("submit report");
   });
 

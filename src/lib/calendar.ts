@@ -38,7 +38,7 @@ export function calendarEntriesForItem(item: Item): CalendarEntry[] {
       item,
       dayKey: format(gpd, "yyyy-MM-dd"),
       kind: "gpd",
-      label: "GPD due",
+      label: "Prep due",
     });
   }
 

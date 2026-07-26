@@ -4,9 +4,9 @@ import { createItem } from "./items";
 import { calendarEntriesForItem } from "./calendar";
 
 describe("calendar", () => {
-  it("includes GPD and look-back dates for CLIMB threads", () => {
+  it("includes prep and look-back dates for linked-event threads", () => {
     const item = createItem({
-      title: "Submit GPD",
+      title: "Submit proposal",
       type: "follow-up",
       linkedEventAt: new Date("2026-10-01T00:00:00").toISOString(),
       checkBackAt: new Date("2026-08-15T09:00:00").toISOString(),
