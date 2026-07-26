@@ -10,6 +10,7 @@ import { StarIcon } from "../components/icons";
 import { ItemForm, SnoozeSheet } from "../components/ItemForm";
 import { LoadingView } from "../components/LoadingView";
 import { PlotBar } from "../components/PlotBar";
+import { QuickAddBar } from "../components/QuickAddBar";
 import { SwipeItem } from "../components/SwipeItem";
 import { ThreadActions } from "../components/ThreadActions";
 import { TodayStats } from "../components/TodayStats";
@@ -28,10 +29,12 @@ import { buildEventDeadlineEntries } from "../lib/event-deadlines";
 import {
   buildCommandFeed,
   BUCKET_LABELS,
+  filterFeedByCategory,
   filterFeedByFocus,
   groupFeedByArea,
   groupFeedByBucket,
 } from "../lib/feed";
+import { filterStaleThreads } from "../lib/pipeline";
 import { setLastCategoryId } from "../lib/preferences";
 import { computeTodaySummary } from "../lib/stats";
 
@@ -57,6 +60,7 @@ export function TodayView() {
   const [editItem, setEditItem] = useState<Item | null>(null);
   const [snoozeItem, setSnoozeItem] = useState<Item | null>(null);
   const [feedFocus, setFeedFocus] = useState<FeedFocus | null>(null);
+  const [areaFilter, setAreaFilter] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("feed");
 
   const folderNames = useMemo(() => {
@@ -72,9 +76,22 @@ export function TodayView() {
     [items, categories],
   );
   const fullFeed = useMemo(() => buildCommandFeed(items), [items]);
-  const feed = useMemo(
-    () => filterFeedByFocus(fullFeed, feedFocus),
-    [fullFeed, feedFocus],
+  const feed = useMemo(() => {
+    const byFocus = filterFeedByFocus(fullFeed, feedFocus);
+    return filterFeedByCategory(byFocus, areaFilter);
+  }, [fullFeed, feedFocus, areaFilter]);
+
+  const staleThreads = useMemo(
+    () =>
+      filterStaleThreads(
+        items.filter((i) => i.type === "follow-up" && i.status !== "done"),
+      ),
+    [items],
+  );
+
+  const hasThreadsInFeed = useMemo(
+    () => feed.some((e) => e.item.type === "follow-up"),
+    [feed],
   );
 
   const byArea = useMemo(
@@ -165,7 +182,9 @@ export function TodayView() {
   }
 
   const renderEntry = (entry: FeedEntry) => {
-    const { item, reason, bucket } = entry;
+    const { item, reason } = entry;
+    const isThread = item.type === "follow-up";
+
     return (
       <div key={item.id}>
         <SwipeItem
@@ -181,7 +200,7 @@ export function TodayView() {
           onEdit={() => handlers.onEdit(item)}
           onDelete={() => handlers.onDelete(item)}
         />
-        {bucket === "chase" && (
+        {isThread && (
           <ThreadActions
             item={item}
             onUpdate={(changes) => {
@@ -200,17 +219,47 @@ export function TodayView() {
         subtitle={
           fullFeed.length === 0
             ? "Nothing active"
-            : feedFocus
+            : feedFocus || areaFilter
               ? `${feed.length} focused · ${fullFeed.length} active`
               : `${fullFeed.length} active`
         }
         showDate
+        action={
+          <button
+            type="button"
+            onClick={() => setShowForm(true)}
+            className="btn-primary min-h-[44px] shrink-0 rounded-lg px-4 py-2 text-sm"
+          >
+            + Add
+          </button>
+        }
       />
 
       <TodayStats
         summary={summary}
         focus={feedFocus}
+        areaFilter={areaFilter}
         onFocusChange={setFeedFocus}
+        onAreaFilterChange={setAreaFilter}
+      />
+
+      {staleThreads.length > 0 && !hasThreadsInFeed && (
+        <Link to="/follow-ups?stale=1" className="home-threads-banner">
+          <span>
+            {staleThreads.length} thread{staleThreads.length === 1 ? "" : "s"}{" "}
+            need a nudge
+          </span>
+          <span className="home-threads-banner-cta">Open threads →</span>
+        </Link>
+      )}
+
+      <QuickAddBar
+        categories={categories}
+        onAdd={async (data) => {
+          const created = await addItem(data);
+          if (created.categoryId) setLastCategoryId(created.categoryId);
+          toast("Added", { kind: "success" });
+        }}
       />
 
       <PlotBar categories={categories} onParsed={handlePlot} />
@@ -226,10 +275,11 @@ export function TodayView() {
 
       <div className="flex flex-wrap items-center gap-2">
         <FilterPill
-          active={viewMode === "feed" && feedFocus === null}
+          active={viewMode === "feed" && feedFocus === null && !areaFilter}
           onClick={() => {
             setViewMode("feed");
             setFeedFocus(null);
+            setAreaFilter(null);
           }}
         >
           All active
@@ -272,12 +322,12 @@ export function TodayView() {
       {fullFeed.length === 0 && eventDeadlineCount === 0 ? (
         <EmptyState
           title="Clear"
-          description="Plot something above to get started"
+          description="Quick add, Plot something, or tap + Add to get started"
         />
       ) : feed.length === 0 ? (
         <EmptyState
           title="Nothing in this focus"
-          description="Tap All active or another summary chip"
+          description="Tap All active or clear summary filters"
         />
       ) : viewMode === "feed" ? (
         <div className="page-block">

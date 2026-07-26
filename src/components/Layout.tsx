@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 
 import {
@@ -20,16 +20,22 @@ import {
 import { InstallPrompt } from "./InstallPrompt";
 import { OfflineBanner } from "./OfflineBanner";
 import { UndoToast } from "./UndoToast";
+import { useItems } from "../hooks/useItems";
+import {
+  buildEventDeadlineEntries,
+  deadlineUrgency,
+} from "../lib/event-deadlines";
+import { filterStaleThreads } from "../lib/pipeline";
 
 const mainLinks = [
   { to: "/", label: "Home", Icon: SunIcon },
   { to: "/calendar", label: "Calendar", Icon: CalendarIcon },
   { to: "/categories", label: "Areas", Icon: GridIcon },
-  { to: "/follow-ups", label: "Threads", Icon: ClockIcon },
+  { to: "/follow-ups", label: "Threads", Icon: ClockIcon, badgeKey: "threads" as const },
 ];
 
 const moreLinks = [
-  { to: "/deadlines", label: "Event prep", Icon: MountainIcon },
+  { to: "/deadlines", label: "Event prep", Icon: MountainIcon, badgeKey: "prep" as const },
   { to: "/folders", label: "All folders", Icon: FolderIcon },
   { to: "/search", label: "Search", Icon: SearchIcon },
   { to: "/notes", label: "Notes", Icon: NoteIcon },
@@ -38,9 +44,43 @@ const moreLinks = [
   { to: "/settings", label: "Settings", Icon: SettingsIcon },
 ];
 
+function NavBadge({ count }: { count: number }) {
+  if (count <= 0) return null;
+  return (
+    <span className="nav-badge" aria-label={`${count} need attention`}>
+      {count > 9 ? "9+" : count}
+    </span>
+  );
+}
+
 export function Layout() {
   const [moreOpen, setMoreOpen] = useState(false);
   const navigate = useNavigate();
+  const { items } = useItems();
+
+  const staleThreadCount = useMemo(
+    () =>
+      filterStaleThreads(
+        items.filter((i) => i.type === "follow-up" && i.status !== "done"),
+      ).length,
+    [items],
+  );
+
+  const urgentPrepCount = useMemo(
+    () =>
+      buildEventDeadlineEntries(items).filter(
+        (e) => deadlineUrgency(e.daysUntilPrep) === "high",
+      ).length,
+    [items],
+  );
+
+  const moreBadgeCount = urgentPrepCount;
+
+  const badgeFor = (key?: "threads" | "prep") => {
+    if (key === "threads") return staleThreadCount;
+    if (key === "prep") return urgentPrepCount;
+    return 0;
+  };
 
   return (
     <div className="app-shell mx-auto flex min-h-dvh max-w-lg flex-col">
@@ -93,23 +133,27 @@ export function Layout() {
                 </button>
               </div>
               <div className="space-y-1.5">
-                {moreLinks.map((link) => (
-                  <button
-                    key={link.to}
-                    type="button"
-                    onClick={() => {
-                      navigate(link.to);
-                      setMoreOpen(false);
-                    }}
-                    className="item-card flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-left"
-                  >
-                    <link.Icon className="text-zinc-500 h-5 w-5 shrink-0" />
-                    <span className="text-zinc-200 flex-1 font-medium">
-                      {link.label}
-                    </span>
-                    <ChevronRightIcon className="text-zinc-600 h-4 w-4" />
-                  </button>
-                ))}
+                {moreLinks.map((link) => {
+                  const count = badgeFor(link.badgeKey);
+                  return (
+                    <button
+                      key={link.to}
+                      type="button"
+                      onClick={() => {
+                        navigate(link.to);
+                        setMoreOpen(false);
+                      }}
+                      className="item-card flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-left"
+                    >
+                      <link.Icon className="text-zinc-500 h-5 w-5 shrink-0" />
+                      <span className="text-zinc-200 flex-1 font-medium">
+                        {link.label}
+                      </span>
+                      <NavBadge count={count} />
+                      <ChevronRightIcon className="text-zinc-600 h-4 w-4" />
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -118,27 +162,33 @@ export function Layout() {
 
       <nav className="nav-floating fixed z-40 rounded-2xl">
         <div className="flex justify-around px-0.5 py-2">
-          {mainLinks.map(({ to, label, Icon }) => (
+          {mainLinks.map(({ to, label, Icon, badgeKey }) => (
             <NavLink
               key={to}
               to={to}
               end={to === "/"}
               className={({ isActive }) =>
-                `flex min-h-[48px] flex-1 flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-[11px] font-medium transition-colors ${
+                `relative flex min-h-[48px] flex-1 flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-[11px] font-medium transition-colors ${
                   isActive ? "nav-item-active" : "text-zinc-500"
                 }`
               }
             >
-              <Icon className="h-5 w-5" />
+              <span className="relative">
+                <Icon className="h-5 w-5" />
+                <NavBadge count={badgeFor(badgeKey)} />
+              </span>
               {label}
             </NavLink>
           ))}
           <button
             type="button"
             onClick={() => setMoreOpen(true)}
-            className="text-zinc-500 flex min-h-[48px] flex-1 flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-[11px] font-medium"
+            className="text-zinc-500 relative flex min-h-[48px] flex-1 flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-[11px] font-medium"
           >
-            <DotsIcon className="h-5 w-5" />
+            <span className="relative">
+              <DotsIcon className="h-5 w-5" />
+              <NavBadge count={moreBadgeCount} />
+            </span>
             More
           </button>
         </div>

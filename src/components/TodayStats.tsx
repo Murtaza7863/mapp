@@ -10,7 +10,7 @@ const CHIP_STYLES: Record<string, string> = {
   Overdue: "text-red-400 border-red-400/20 bg-red-400/8",
   Today: "text-sky-300 border-sky-400/20 bg-sky-400/8",
   Routines: "text-emerald-300 border-emerald-400/20 bg-emerald-400/8",
-  Waiting: "text-violet-300 border-violet-400/20 bg-violet-400/8",
+  Threads: "text-violet-300 border-violet-400/20 bg-violet-400/8",
   Snoozed: "text-amber-300 border-amber-400/20 bg-amber-400/8",
   Priority: "text-yellow-300 border-yellow-400/20 bg-yellow-400/8",
 };
@@ -19,7 +19,7 @@ const CHIP_FOCUS: Record<string, FeedFocus> = {
   Overdue: "overdue",
   Today: "today",
   Routines: "routine",
-  Waiting: "follow-up",
+  Threads: "follow-up",
   Snoozed: "snoozed",
   Priority: "priority",
 };
@@ -27,15 +27,23 @@ const CHIP_FOCUS: Record<string, FeedFocus> = {
 interface Props {
   summary: TodaySummary;
   focus?: FeedFocus | null;
+  areaFilter?: string | null;
   onFocusChange?: (focus: FeedFocus | null) => void;
+  onAreaFilterChange?: (categoryId: string | null) => void;
 }
 
-export function TodayStats({ summary, focus = null, onFocusChange }: Props) {
+export function TodayStats({
+  summary,
+  focus = null,
+  areaFilter = null,
+  onFocusChange,
+  onAreaFilterChange,
+}: Props) {
   const chips = [
     { label: "Overdue", value: summary.overdue },
     { label: "Today", value: summary.dueToday },
     { label: "Routines", value: summary.routines },
-    { label: "Waiting", value: summary.followUps },
+    { label: "Threads", value: summary.openThreads },
     { label: "Snoozed", value: summary.snoozed },
     { label: "Priority", value: summary.priority },
   ].filter((c) => c.value > 0);
@@ -58,12 +66,11 @@ export function TodayStats({ summary, focus = null, onFocusChange }: Props) {
         {chips.map((chip) => {
           const chipFocus = CHIP_FOCUS[chip.label];
           const active = focus === chipFocus;
-          const interactive = Boolean(onFocusChange && chipFocus);
           const className = `stat-chip rounded-full border px-3 py-1 text-xs font-semibold ${CHIP_STYLES[chip.label]} ${
             active ? "ring-1 ring-white/30" : ""
-          } ${interactive ? "cursor-pointer" : ""}`;
+          }`;
 
-          if (!interactive) {
+          if (!onFocusChange || !chipFocus) {
             return (
               <span key={chip.label} className={className}>
                 <span className="mr-1 opacity-70">{chip.value}</span>
@@ -78,9 +85,9 @@ export function TodayStats({ summary, focus = null, onFocusChange }: Props) {
               type="button"
               aria-pressed={active}
               onClick={() =>
-                onFocusChange?.(active ? null : (chipFocus ?? null))
+                onFocusChange(active ? null : (chipFocus ?? null))
               }
-              className={className}
+              className={`${className} cursor-pointer`}
             >
               <span className="mr-1 opacity-70">{chip.value}</span>
               {chip.label}
@@ -90,20 +97,42 @@ export function TodayStats({ summary, focus = null, onFocusChange }: Props) {
       </div>
       {summary.byCategory.length > 0 && (
         <div className="border-white/5 mt-3 flex flex-wrap gap-1.5 border-t pt-3">
-          {summary.byCategory.map(({ category, count }) => (
-            <span
-              key={category.id}
-              className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium"
-              style={{
-                backgroundColor: `${category.color}14`,
-                borderColor: `${category.color}28`,
-                color: category.color,
-              }}
-            >
-              <CategoryIcon category={category} className="h-2.5 w-2.5" />
-              {count}
-            </span>
-          ))}
+          {summary.byCategory.map(({ category, count }) => {
+            const active = areaFilter === category.id;
+            const style = {
+              backgroundColor: `${category.color}14`,
+              borderColor: `${category.color}28`,
+              color: category.color,
+            };
+            const className = `inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium ${
+              active ? "ring-1 ring-white/25" : ""
+            }`;
+
+            if (!onAreaFilterChange) {
+              return (
+                <span key={category.id} className={className} style={style}>
+                  <CategoryIcon category={category} className="h-2.5 w-2.5" />
+                  {count}
+                </span>
+              );
+            }
+
+            return (
+              <button
+                key={category.id}
+                type="button"
+                aria-pressed={active}
+                onClick={() =>
+                  onAreaFilterChange(active ? null : category.id)
+                }
+                className={`${className} cursor-pointer`}
+                style={style}
+              >
+                <CategoryIcon category={category} className="h-2.5 w-2.5" />
+                {count}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>

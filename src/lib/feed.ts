@@ -208,3 +208,11 @@ export function filterFeedByFocus(
   }
   return feed.filter((e) => e.bucket === focus);
 }
+
+export function filterFeedByCategory(
+  feed: FeedEntry[],
+  categoryId: string | null,
+): FeedEntry[] {
+  if (!categoryId) return feed;
+  return feed.filter((e) => e.item.categoryId === categoryId);
+}

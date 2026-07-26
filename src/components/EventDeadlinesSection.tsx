@@ -31,7 +31,7 @@ export function EventDeadlinesSection({ items, onSelect, compact }: Props) {
           <MountainIcon className="h-4 w-4" />
           Event prep deadlines
         </div>
-        {!compact && (
+        {(!compact || entries.length > 3) && (
           <Link to="/deadlines" className="text-zinc-500 text-[11px]">
             View all
           </Link>

@@ -12,7 +12,8 @@ export interface TodaySummary {
   overdue: number;
   dueToday: number;
   routines: number;
-  followUps: number;
+  /** All open follow-up threads */
+  openThreads: number;
   snoozed: number;
   priority: number;
   byCategory: { category: Category; count: number }[];
@@ -61,7 +62,7 @@ export function computeTodaySummary(
     overdue,
     dueToday,
     routines,
-    followUps,
+    openThreads: followUps,
     snoozed,
     priority,
     byCategory,

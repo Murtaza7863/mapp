@@ -178,6 +178,44 @@ body {
   transform: translateX(-50%);
 }
 
+.nav-badge {
+  position: absolute;
+  top: -0.25rem;
+  right: -0.5rem;
+  min-width: 1rem;
+  height: 1rem;
+  padding: 0 0.25rem;
+  border-radius: 9999px;
+  background: #f43f5e;
+  color: #fff;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  line-height: 1rem;
+  text-align: center;
+}
+
+.home-threads-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(139, 92, 246, 0.25);
+  background: rgba(139, 92, 246, 0.08);
+  color: #c4b5fd;
+  font-size: 0.8125rem;
+  text-decoration: none;
+}
+
+.home-threads-banner-cta {
+  color: #a78bfa;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .app-header {
   padding-top: env(safe-area-inset-top);
 }

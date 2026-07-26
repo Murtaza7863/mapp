@@ -16,12 +16,10 @@ import {
 } from "../components/ui";
 import { useCategories } from "../hooks/useCategories";
 import { useItems } from "../hooks/useItems";
-import { useToast } from "../hooks/useToast";
 import { useUndo } from "../hooks/useUndo";
 import {
   filterStaleThreads,
   groupFollowUpsByStage,
-  isStaleThread,
 } from "../lib/pipeline";
 import { PIPELINE_STAGE_LABELS } from "../types";
 
@@ -47,7 +45,6 @@ export function FollowUpsView() {
   } = useItems();
   const { deleteWithUndo } = useUndo();
   const { categories, getCategory } = useCategories();
-  const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState<Item | null>(null);
@@ -88,12 +85,9 @@ export function FollowUpsView() {
     setSearchParams({}, { replace: true });
   }, [deepLinkId, items, setSearchParams]);
 
-  const recordContact = async (item: Item) => {
-    await updateItem(item.id, {
-      lastContactAt: new Date().toISOString(),
-    });
-    toast("Contact recorded", { kind: "success" });
-  };
+  useEffect(() => {
+    if (searchParams.get("stale") === "1") setStaleOnly(true);
+  }, [searchParams]);
 
   const renderList = (list: Item[]) => (
     <div>
@@ -112,16 +106,6 @@ export function FollowUpsView() {
             item={item}
             onUpdate={(changes) => updateItem(item.id, changes)}
           />
-          <button
-            type="button"
-            onClick={() => recordContact(item)}
-            className="text-zinc-500 active:text-zinc-300 min-h-[44px] pl-9 text-xs"
-          >
-            Mark contacted today
-            {isStaleThread(item) && (
-              <span className="text-amber-400/90 ml-2">· stale</span>
-            )}
-          </button>
         </div>
       ))}
     </div>

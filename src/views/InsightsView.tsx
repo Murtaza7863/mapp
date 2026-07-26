@@ -1,6 +1,7 @@
 import { format } from "date-fns";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useMemo } from "react";
+import { Link } from "react-router-dom";
 
 import { CategoryBadge } from "../components/CategoryBadge";
 import { TypeBadge } from "../components/TypeBadge";
@@ -36,10 +37,18 @@ export function InsightsView() {
       <PageHeader title="Insights" subtitle="This week" />
 
       <div className="mb-6 grid grid-cols-2 gap-3">
-        <StatCard label="Done this week" value={insights.completions} />
+        <StatCard
+          label="Done this week"
+          value={insights.completions}
+          to="/history"
+        />
         <StatCard label="Streak" value={`${insights.streakDays}d`} />
-        <StatCard label="Pending" value={pending} />
-        <StatCard label="Completed" value={done} />
+        <StatCard
+          label="Pending"
+          value={pending}
+          to="/search?status=pending"
+        />
+        <StatCard label="Completed" value={done} to="/search?status=done" />
       </div>
 
       {insights.busiestDay && (
@@ -103,11 +112,32 @@ export function InsightsView() {
   );
 }
 
-function StatCard({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div className="glass-card rounded-2xl p-4">
+function StatCard({
+  label,
+  value,
+  to,
+}: {
+  label: string;
+  value: string | number;
+  to?: string;
+}) {
+  const content = (
+    <>
       <p className="section-label">{label}</p>
       <p className="page-title mt-2 text-3xl">{value}</p>
-    </div>
+    </>
+  );
+
+  if (!to) {
+    return <div className="glass-card rounded-2xl p-4">{content}</div>;
+  }
+
+  return (
+    <Link
+      to={to}
+      className="glass-card glass-card-hover block rounded-2xl p-4 active:opacity-90"
+    >
+      {content}
+    </Link>
   );
 }

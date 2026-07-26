@@ -28,7 +28,7 @@ describe("stats", () => {
     const summary = computeTodaySummary(items, categories);
     expect(summary.overdue).toBe(1);
     expect(summary.routines).toBe(1);
-    expect(summary.followUps).toBe(1);
+    expect(summary.openThreads).toBe(1);
     expect(summary.byCategory.length).toBeGreaterThan(0);
   });
 
