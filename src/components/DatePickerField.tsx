@@ -65,10 +65,10 @@ export function DatePickerField({
         onClick={() => setOpen((o) => !o)}
         className="input-field flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-left"
       >
-        <span className={value ? "text-zinc-200" : "text-zinc-500"}>
+        <span className={value ? "text-primary" : "text-muted"}>
           {label}
         </span>
-        <CalendarIcon className="text-zinc-500 h-4 w-4 shrink-0" />
+        <CalendarIcon className="text-muted h-4 w-4 shrink-0" />
       </button>
 
       {open && (
@@ -77,25 +77,25 @@ export function DatePickerField({
             <button
               type="button"
               onClick={() => setMonth((m) => subMonths(m, 1))}
-              className="text-zinc-400 hover:text-zinc-200 rounded-lg px-2 py-1"
+              className="text-muted hover:text-primary rounded-lg px-2 py-1"
               aria-label="Previous month"
             >
               ‹
             </button>
-            <span className="text-zinc-200 text-sm font-medium">
+            <span className="text-primary text-sm font-medium">
               {format(month, "MMMM yyyy")}
             </span>
             <button
               type="button"
               onClick={() => setMonth((m) => addMonths(m, 1))}
-              className="text-zinc-400 hover:text-zinc-200 rounded-lg px-2 py-1"
+              className="text-muted hover:text-primary rounded-lg px-2 py-1"
               aria-label="Next month"
             >
               ›
             </button>
           </div>
 
-          <div className="text-zinc-600 mb-1 grid grid-cols-7 text-center text-[10px] font-medium">
+          <div className="text-muted mb-1 grid grid-cols-7 text-center text-[10px] font-medium">
             {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
               <div key={`${d}-${i}`}>{d}</div>
             ))}
@@ -116,10 +116,10 @@ export function DatePickerField({
                     selected
                       ? "bg-[#ff7a59] font-semibold text-[#1a0f0a]"
                       : today
-                        ? "text-zinc-100 ring-1 ring-[#ff7a59]/40"
+                        ? "text-primary ring-1 ring-[#ff7a59]/40"
                         : inMonth
-                          ? "text-zinc-300 hover:bg-white/5"
-                          : "text-zinc-600 hover:bg-white/5"
+                          ? "text-primary hover:bg-white/5"
+                          : "text-muted hover:bg-white/5"
                   }`}
                 >
                   {format(day, "d")}

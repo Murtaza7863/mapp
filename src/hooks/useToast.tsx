@@ -59,12 +59,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {toasts.map((t) => (
           <div
             key={t.id}
-            className={`pointer-events-auto flex max-w-lg items-center gap-3 rounded-xl border px-4 py-3 text-sm shadow-lg backdrop-blur-md ${
+            className={`pointer-events-auto flex max-w-lg items-center gap-3 rounded-lg border px-4 py-3 text-sm shadow-sm ${
               t.kind === "success"
-                ? "border-emerald-500/30 bg-emerald-950/90 text-emerald-100"
+                ? "border-block/20 bg-paper text-block"
                 : t.kind === "error"
-                  ? "border-red-500/30 bg-red-950/90 text-red-100"
-                  : "border-white/10 bg-zinc-950/95 text-zinc-100"
+                  ? "border-danger/20 bg-paper text-danger"
+                  : "border-rule bg-surface text-primary"
             }`}
           >
             <span className="flex-1">{t.message}</span>
@@ -75,7 +75,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                   t.action?.onClick();
                   dismiss(t.id);
                 }}
-                className="text-sky-300 shrink-0 text-xs font-semibold"
+                className="text-block shrink-0 text-xs font-semibold"
               >
                 {t.action.label}
               </button>

@@ -154,8 +154,8 @@ export function ContainerDetailView() {
       {progress && (
         <div className="item-card rounded-xl px-4 py-3.5">
           <div className="flex items-center justify-between gap-3">
-            <span className="text-zinc-500 text-[11px]">Progress</span>
-            <span className="text-zinc-400 text-[11px] tabular-nums">
+            <span className="text-muted text-[11px]">Progress</span>
+            <span className="text-muted text-[11px] tabular-nums">
               {progress.label}
             </span>
           </div>
@@ -191,7 +191,7 @@ export function ContainerDetailView() {
                   }
                 />
                 {list.length === 0 ? (
-                  <p className="text-zinc-600 text-xs">
+                  <p className="text-muted text-xs">
                     No {subgroupSectionLabel(key).toLowerCase()} yet.
                   </p>
                 ) : (
@@ -239,7 +239,7 @@ export function ContainerDetailView() {
         <button
           type="button"
           onClick={() => openAddChild(hasSubgroups ? subgroups[0] : undefined)}
-          className="border-zinc-800 text-zinc-400 w-full rounded-xl border border-dashed py-3"
+          className="border-zinc-800 text-muted w-full rounded-xl border border-dashed py-3"
         >
           + Add task
         </button>

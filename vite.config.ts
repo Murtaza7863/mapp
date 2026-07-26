@@ -39,8 +39,8 @@ export default defineConfig({
         short_name: "mApp",
         description:
           "A new way to stay organised — map tasks, threads, and routines in one mobile app.",
-        theme_color: "#0b0c11",
-        background_color: "#0b0c11",
+        theme_color: "#F8F9FB",
+        background_color: "#F8F9FB",
         display: "standalone",
         orientation: "portrait",
         start_url: "/",

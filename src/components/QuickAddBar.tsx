@@ -58,21 +58,21 @@ export function QuickAddBar({ categories, onAdd, onPasteToPlot }: Props) {
   };
 
   return (
-    <div className="mb-3 flex gap-2">
+    <div className="mb-1 flex gap-2">
       <input
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === "Enter") void submit();
         }}
-        placeholder="Quick add — bump @jake → send deck"
-        className="input-field min-w-0 flex-1 rounded-xl px-3.5 py-2.5 text-sm"
-        aria-label="Quick add task"
+        placeholder="One line — bump @jake → send deck"
+        className="input-field min-w-0 flex-1 rounded-lg px-3 py-2 text-sm"
+        aria-label="Quick add"
       />
       <button
         type="button"
         onClick={() => void paste()}
-        className="border-zinc-800 text-zinc-500 shrink-0 rounded-xl border px-3 py-2.5 text-xs"
+        className="btn-ghost shrink-0 rounded-lg px-3 py-2 text-xs"
         aria-label="Paste from clipboard"
       >
         Paste
@@ -81,7 +81,7 @@ export function QuickAddBar({ categories, onAdd, onPasteToPlot }: Props) {
         type="button"
         disabled={!value.trim() || saving}
         onClick={() => void submit()}
-        className="btn-primary shrink-0 rounded-xl px-4 py-2.5 text-sm disabled:opacity-40"
+        className="btn-primary shrink-0 rounded-lg px-3 py-2 text-sm disabled:opacity-40"
       >
         Add
       </button>

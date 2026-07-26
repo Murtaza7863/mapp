@@ -187,18 +187,18 @@ export function ItemForm({
   };
 
   return (
-    <div className="bg-black/70 fixed inset-0 z-50 flex items-end justify-center backdrop-blur-md sm:items-center">
+    <div className="bg-overlay fixed inset-0 z-50 flex items-end justify-center  sm:items-center">
       <div className="modal-sheet max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-t-3xl sm:rounded-3xl">
         <div className="modal-accent-bar rounded-t-3xl sm:rounded-t-3xl" />
         <div className="p-5">
           <div className="mb-5 flex items-center justify-between">
-            <h2 className="text-zinc-100 text-lg font-semibold">
+            <h2 className="text-primary text-lg font-semibold">
               {item ? "Edit item" : "New item"}
             </h2>
             <button
               type="button"
               onClick={onClose}
-              className="bg-white/5 text-zinc-400 hover:text-zinc-200 rounded-full p-2"
+              className="bg-white/5 text-muted hover:text-primary rounded-full p-2"
               aria-label="Close"
             >
               <CloseIcon className="h-4 w-4" />
@@ -398,7 +398,7 @@ export function ItemForm({
                     placeholder="Event date"
                   />
                   {linkedEventDate && (
-                    <p className="text-zinc-600 mt-1 text-[11px]">
+                    <p className="text-muted mt-1 text-[11px]">
                       Prep due ~{" "}
                       {format(
                         gpdDueFromEvent(
@@ -489,7 +489,7 @@ export function ItemForm({
               />
             </div>
 
-            <label className="border-white/8 bg-white/3 text-zinc-300 flex items-center gap-2.5 rounded-xl border px-3 py-2.5 text-sm">
+            <label className="border-white/8 bg-white/3 text-primary flex items-center gap-2.5 rounded-xl border px-3 py-2.5 text-sm">
               <input
                 type="checkbox"
                 checked={notificationsMuted}
@@ -499,7 +499,7 @@ export function ItemForm({
               Mute notifications for this item
             </label>
 
-            <label className="border-white/8 bg-white/3 text-zinc-300 flex items-center gap-2.5 rounded-xl border px-3 py-2.5 text-sm">
+            <label className="border-white/8 bg-white/3 text-primary flex items-center gap-2.5 rounded-xl border px-3 py-2.5 text-sm">
               <input
                 type="checkbox"
                 checked={priority}
@@ -568,7 +568,7 @@ export function SnoozeSheet({
 
   return (
     <div
-      className="bg-black/70 fixed inset-0 z-50 flex items-end backdrop-blur-md"
+      className="bg-overlay fixed inset-0 z-50 flex items-end "
       onClick={onClose}
     >
       <div
@@ -577,7 +577,7 @@ export function SnoozeSheet({
       >
         <div className="modal-accent-bar rounded-t-3xl" />
         <div className="p-5">
-          <h3 className="text-zinc-100 mb-4 text-lg font-semibold">
+          <h3 className="text-primary mb-4 text-lg font-semibold">
             {isSnoozed ? "Snooze again or wake" : "Snooze until"}
           </h3>
           {onWakeNow && (
@@ -595,7 +595,7 @@ export function SnoozeSheet({
                 key={o.label}
                 type="button"
                 onClick={() => onSelect(o.date)}
-                className="glass-card glass-card-hover text-zinc-200 w-full rounded-2xl px-4 py-3.5 text-left"
+                className="glass-card glass-card-hover text-primary w-full rounded-2xl px-4 py-3.5 text-left"
               >
                 {o.label}
               </button>

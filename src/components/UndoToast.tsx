@@ -6,7 +6,7 @@ export function UndoToast() {
 
   return (
     <div className="undo-toast fixed z-50 flex items-center justify-between gap-3 rounded-2xl px-4 py-3">
-      <span className="text-zinc-300 truncate text-sm">{undoMessage}</span>
+      <span className="truncate text-sm text-white/90">{undoMessage}</span>
       <button
         type="button"
         onClick={undo}

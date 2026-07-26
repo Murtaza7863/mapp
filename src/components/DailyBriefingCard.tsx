@@ -24,10 +24,10 @@ export function DailyBriefingCard({
 
   return (
     <section className="daily-briefing mb-4 rounded-2xl p-4">
-      <p className="text-zinc-100 text-[15px] font-semibold leading-snug">
+      <p className="text-primary text-[15px] font-semibold leading-snug">
         {headline}
       </p>
-      <p className="text-zinc-500 mt-1 text-xs">{subline}</p>
+      <p className="text-muted mt-1 text-xs">{subline}</p>
       {(!isClear || showWrapUp) && (
         <div className="mt-3 flex flex-wrap gap-2">
           {needsNudge > 0 && onFocusNudge && (

@@ -61,14 +61,14 @@ export function HistoryView() {
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Search completed items…"
-        className="border-zinc-800 bg-zinc-950 text-zinc-100 placeholder:text-zinc-500 mb-3 w-full rounded-xl border px-4 py-3 outline-none"
+        className="border-zinc-800 bg-zinc-950 text-primary placeholder:text-muted mb-3 w-full rounded-xl border px-4 py-3 outline-none"
       />
 
       <div className="mb-4 flex flex-wrap gap-2">
         <select
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value)}
-          className="border-zinc-800 bg-zinc-900 text-zinc-200 rounded-lg border px-2 py-1.5 text-xs"
+          className="border-zinc-800 bg-zinc-900 text-primary rounded-lg border px-2 py-1.5 text-xs"
         >
           <option value="all">All types</option>
           {Object.entries(ITEM_TYPE_LABELS).map(([k, v]) => (
@@ -77,19 +77,19 @@ export function HistoryView() {
             </option>
           ))}
         </select>
-        <span className="text-zinc-500 self-center text-xs">
+        <span className="text-muted self-center text-xs">
           {filtered.length} completion{filtered.length === 1 ? "" : "s"}
         </span>
       </div>
 
       {filtered.length === 0 ? (
-        <div className="border-zinc-800 text-zinc-500 rounded-2xl border border-dashed p-8 text-center">
+        <div className="border-zinc-800 text-muted rounded-2xl border border-dashed p-8 text-center">
           {query ? "No matches" : "Nothing completed yet"}
         </div>
       ) : (
         grouped.map(([day, entries]) => (
           <section key={day} className="mb-6">
-            <h2 className="text-zinc-500 mb-2 text-xs font-semibold tracking-wider uppercase">
+            <h2 className="text-muted mb-2 text-xs font-semibold tracking-wider uppercase">
               {day}
             </h2>
             <div className="space-y-2">
@@ -100,7 +100,7 @@ export function HistoryView() {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
-                      <h3 className="text-zinc-300 font-medium">
+                      <h3 className="text-primary font-medium">
                         {entry.itemTitle}
                       </h3>
                       <div className="mt-1.5 flex flex-wrap gap-1.5">
@@ -109,11 +109,11 @@ export function HistoryView() {
                         />
                         <TypeBadge type={entry.itemType} />
                       </div>
-                      <p className="text-zinc-500 mt-2 text-xs">
+                      <p className="text-muted mt-2 text-xs">
                         {formatCompleted(entry.completedAt)}
                       </p>
                       {entry.notes && (
-                        <p className="text-zinc-600 mt-1 text-xs">
+                        <p className="text-muted mt-1 text-xs">
                           {entry.notes}
                         </p>
                       )}

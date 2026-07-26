@@ -145,7 +145,7 @@ export function SettingsView() {
 
       <section className="glass-card mb-6 rounded-2xl p-4">
         <h2 className="mb-3 font-semibold">Install</h2>
-        <dl className="text-zinc-400 space-y-2 text-sm">
+        <dl className="text-muted space-y-2 text-sm">
           <div className="flex justify-between gap-4">
             <dt>Home Screen app</dt>
             <dd className={installed ? "text-emerald-400" : "text-amber-400"}>
@@ -153,7 +153,7 @@ export function SettingsView() {
             </dd>
           </div>
           {isIos() && !installed && (
-            <p className="text-zinc-500 text-xs leading-relaxed">
+            <p className="text-muted text-xs leading-relaxed">
               Safari: Share, then Add to Home Screen. Open the app from that
               icon before enabling notifications.
             </p>
@@ -168,14 +168,14 @@ export function SettingsView() {
             Set VITE_PUSH_API_URL and VITE_VAPID_PUBLIC_KEY when deploying.
           </p>
         )}
-        <dl className="text-zinc-400 mb-4 space-y-2 text-sm">
+        <dl className="text-muted mb-4 space-y-2 text-sm">
           <div className="flex justify-between gap-4">
             <dt>Permission</dt>
-            <dd className="text-zinc-300 capitalize">{notifyPermission}</dd>
+            <dd className="text-primary capitalize">{notifyPermission}</dd>
           </div>
           <div className="flex justify-between gap-4">
             <dt>Push enabled</dt>
-            <dd className="text-zinc-300">
+            <dd className="text-primary">
               {settings?.notificationsEnabled ? "Yes" : "No"}
             </dd>
           </div>
@@ -226,7 +226,7 @@ export function SettingsView() {
 
         {settings?.digestEnabled && (
           <label className="mt-2 block">
-            <span className="text-zinc-400 mb-1 block text-xs">
+            <span className="text-muted mb-1 block text-xs">
               Digest time
             </span>
             <input
@@ -246,7 +246,7 @@ export function SettingsView() {
         <h2 className="mb-3 font-semibold">Preferences</h2>
 
         <label className="mb-3 block">
-          <span className="text-zinc-400 mb-1 block text-xs">
+          <span className="text-muted mb-1 block text-xs">
             Default reminder offset
           </span>
           <select
@@ -256,7 +256,7 @@ export function SettingsView() {
                 defaultReminderOffsetMinutes: Number(e.target.value),
               })
             }
-            className="border-zinc-800 bg-zinc-900 text-zinc-100 w-full rounded-lg border px-3 py-2"
+            className="border-zinc-800 bg-zinc-900 text-primary w-full rounded-lg border px-3 py-2"
           >
             {REMINDER_OFFSET_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
@@ -267,7 +267,7 @@ export function SettingsView() {
         </label>
 
         <label className="mb-3 block">
-          <span className="text-zinc-400 mb-1 block text-xs">
+          <span className="text-muted mb-1 block text-xs">
             Default area for new tasks
           </span>
           <select
@@ -277,7 +277,7 @@ export function SettingsView() {
                 defaultCategoryId: e.target.value || undefined,
               })
             }
-            className="border-zinc-800 bg-zinc-900 text-zinc-100 w-full rounded-lg border px-3 py-2"
+            className="border-zinc-800 bg-zinc-900 text-primary w-full rounded-lg border px-3 py-2"
           >
             <option value="">Ask each time</option>
             {categories.map((c) => (
@@ -303,10 +303,10 @@ export function SettingsView() {
 
       <section className="glass-card mb-6 rounded-2xl p-4">
         <h2 className="mb-3 font-semibold">Data safety</h2>
-        <dl className="text-zinc-400 mb-4 space-y-2 text-sm">
+        <dl className="text-muted mb-4 space-y-2 text-sm">
           <div className="flex justify-between gap-4">
             <dt>Auto-backup</dt>
-            <dd className="text-zinc-300 text-right">
+            <dd className="text-primary text-right">
               {settings?.lastAutoBackupAt
                 ? formatDistanceToNow(parseISO(settings.lastAutoBackupAt), {
                     addSuffix: true,
@@ -317,7 +317,7 @@ export function SettingsView() {
           {settings?.lastManualBackupAt && (
             <div className="flex justify-between gap-4">
               <dt>Last export</dt>
-              <dd className="text-zinc-300 text-right">
+              <dd className="text-primary text-right">
                 {formatDistanceToNow(parseISO(settings.lastManualBackupAt), {
                   addSuffix: true,
                 })}
@@ -327,7 +327,7 @@ export function SettingsView() {
           {storageInfo && (
             <div className="flex justify-between gap-4">
               <dt>Storage</dt>
-              <dd className="text-zinc-300 text-right">
+              <dd className="text-primary text-right">
                 {storageInfo.usageMb.toFixed(1)} MB
                 {storageInfo.quotaMb > 0 &&
                   ` / ${storageInfo.quotaMb.toFixed(0)} MB`}
@@ -374,20 +374,20 @@ export function SettingsView() {
 
       <section className="glass-card mb-6 rounded-2xl p-4">
         <h2 className="mb-3 font-semibold">Backup</h2>
-        <p className="text-zinc-400 mb-3 text-sm">
+        <p className="text-muted mb-3 text-sm">
           Data is stored on this device. Auto-backups keep the last 2 snapshots
           on-device — export JSON before switching phones.
         </p>
         <button
           type="button"
           onClick={handleExport}
-          className="border-zinc-800 text-zinc-200 mb-3 w-full rounded-xl border py-3"
+          className="border-zinc-800 text-primary mb-3 w-full rounded-xl border py-3"
         >
           Export all JSON
         </button>
         {categories.length > 0 && (
           <div className="mb-3 space-y-2">
-            <p className="text-zinc-500 text-xs">Export by area</p>
+            <p className="text-muted text-xs">Export by area</p>
             {categories.map((cat) => (
               <button
                 key={cat.id}
@@ -400,7 +400,7 @@ export function SettingsView() {
             ))}
           </div>
         )}
-        <label className="border-zinc-800 text-zinc-200 block w-full cursor-pointer rounded-xl border py-3 text-center">
+        <label className="border-zinc-800 text-primary block w-full cursor-pointer rounded-xl border py-3 text-center">
           Import JSON
           <input
             type="file"
@@ -414,8 +414,8 @@ export function SettingsView() {
         )}
       </section>
 
-      <section className="border-zinc-900 bg-zinc-950/50 text-zinc-500 rounded-xl border p-4 text-sm">
-        <h2 className="text-zinc-300 mb-2 font-semibold">About</h2>
+      <section className="border-zinc-900 bg-zinc-950/50 text-muted rounded-xl border p-4 text-sm">
+        <h2 className="text-primary mb-2 font-semibold">About</h2>
         <p>Local storage only. Data stays on this device.</p>
         <p className="mt-2">Device ID: {settings?.deviceId?.slice(0, 8)}…</p>
       </section>

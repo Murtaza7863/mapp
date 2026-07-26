@@ -65,7 +65,7 @@ export function TodayStats({
         <h2 className="section-label">Summary</h2>
         <Link
           to="/insights"
-          className="text-zinc-500 hover:text-zinc-300 flex items-center gap-0.5 text-xs font-medium transition-colors"
+          className="text-muted hover:text-primary flex items-center gap-0.5 text-xs font-medium transition-colors"
         >
           Insights
           <ChevronRightIcon className="h-3.5 w-3.5" />

@@ -55,11 +55,11 @@ export function NotesView() {
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Filter notes…"
-        className="border-zinc-800 bg-zinc-950 text-zinc-100 placeholder:text-zinc-500 mb-4 w-full rounded-xl border px-4 py-3 outline-none"
+        className="border-zinc-800 bg-zinc-950 text-primary placeholder:text-muted mb-4 w-full rounded-xl border px-4 py-3 outline-none"
       />
 
       {notes.length === 0 ? (
-        <div className="border-zinc-800 text-zinc-500 rounded-2xl border border-dashed p-8 text-center">
+        <div className="border-zinc-800 text-muted rounded-2xl border border-dashed p-8 text-center">
           No notes yet
         </div>
       ) : (
@@ -74,14 +74,14 @@ export function NotesView() {
                 <div className="min-w-0 flex-1">
                   <h3 className="font-medium">{note.title}</h3>
                   {note.notes && (
-                    <p className="text-zinc-400 mt-1 line-clamp-3 text-sm">
+                    <p className="text-muted mt-1 line-clamp-3 text-sm">
                       {note.notes}
                     </p>
                   )}
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     <CategoryBadge category={getCategory(note.categoryId)} />
                     {note.dueAt && (
-                      <span className="text-zinc-500 text-xs">
+                      <span className="text-muted text-xs">
                         {formatDue(note.dueAt)}
                       </span>
                     )}
@@ -93,7 +93,7 @@ export function NotesView() {
                     e.stopPropagation();
                     deleteWithUndo(note, deleteItem, restoreItem);
                   }}
-                  className="text-zinc-600 hover:text-red-400 shrink-0 p-1"
+                  className="text-muted hover:text-red-400 shrink-0 p-1"
                 >
                   <CloseIcon className="h-4 w-4" />
                 </button>

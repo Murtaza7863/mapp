@@ -17,7 +17,7 @@ export function WrapUpSheet({
 }: Props) {
   return (
     <div
-      className="bg-black/70 fixed inset-0 z-50 flex items-end backdrop-blur-sm"
+      className="bg-overlay fixed inset-0 z-50 flex items-end "
       onClick={onClose}
     >
       <div
@@ -25,8 +25,8 @@ export function WrapUpSheet({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="modal-accent-bar mb-4 rounded-t-3xl" />
-        <h2 className="text-zinc-100 text-lg font-semibold">End of day</h2>
-        <p className="text-zinc-400 mt-1 text-sm">{summary.headline}</p>
+        <h2 className="text-primary text-lg font-semibold">End of day</h2>
+        <p className="text-muted mt-1 text-sm">{summary.headline}</p>
 
         <div className="mt-4 grid grid-cols-3 gap-2">
           <Stat label="Done" value={summary.doneToday} />
@@ -57,7 +57,7 @@ export function WrapUpSheet({
           <button
             type="button"
             onClick={onClose}
-            className="text-zinc-500 w-full py-2 text-sm"
+            className="text-muted w-full py-2 text-sm"
           >
             Done for today
           </button>
@@ -70,8 +70,8 @@ export function WrapUpSheet({
 function Stat({ label, value }: { label: string; value: number }) {
   return (
     <div className="bg-zinc-950 rounded-xl px-3 py-2 text-center">
-      <p className="text-zinc-500 text-[10px] uppercase">{label}</p>
-      <p className="text-zinc-100 text-xl font-semibold tabular-nums">{value}</p>
+      <p className="text-muted text-[10px] uppercase">{label}</p>
+      <p className="text-primary text-xl font-semibold tabular-nums">{value}</p>
     </div>
   );
 }

@@ -149,7 +149,7 @@ export function SearchView() {
         ))}
       </div>
 
-      <p className="text-zinc-500 mb-3 text-xs">
+      <p className="text-muted mb-3 text-xs">
         {results.length} result{results.length === 1 ? "" : "s"}
       </p>
 
@@ -186,7 +186,7 @@ export function SearchView() {
       <button
         type="button"
         onClick={() => setShowForm(true)}
-        className="border-zinc-800 text-zinc-400 mt-4 w-full rounded-xl border border-dashed py-3"
+        className="border-zinc-800 text-muted mt-4 w-full rounded-xl border border-dashed py-3"
       >
         + Add item
       </button>

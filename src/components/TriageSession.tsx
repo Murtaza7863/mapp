@@ -15,15 +15,15 @@ export function TriageSession({ items, onSchedule, onDelete, onClose }: Props) {
   if (!current) {
     return (
       <div
-        className="bg-black/70 fixed inset-0 z-50 flex items-end backdrop-blur-sm"
+        className="bg-overlay fixed inset-0 z-50 flex items-end "
         onClick={onClose}
       >
         <div
           className="modal-sheet w-full rounded-t-3xl p-5 pb-8 text-center"
           onClick={(e) => e.stopPropagation()}
         >
-          <p className="text-zinc-100 text-lg font-semibold">Inbox zero</p>
-          <p className="text-zinc-400 mt-1 text-sm">Everything has a plan.</p>
+          <p className="text-primary text-lg font-semibold">Inbox zero</p>
+          <p className="text-muted mt-1 text-sm">Everything has a plan.</p>
           <button
             type="button"
             onClick={onClose}
@@ -43,7 +43,7 @@ export function TriageSession({ items, onSchedule, onDelete, onClose }: Props) {
 
   return (
     <div
-      className="bg-black/70 fixed inset-0 z-50 flex items-end backdrop-blur-sm"
+      className="bg-overlay fixed inset-0 z-50 flex items-end "
       onClick={onClose}
     >
       <div
@@ -51,14 +51,14 @@ export function TriageSession({ items, onSchedule, onDelete, onClose }: Props) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="modal-accent-bar mb-4 rounded-t-3xl" />
-        <p className="text-zinc-500 text-xs">
+        <p className="text-muted text-xs">
           Triage {items.length} left · no date yet
         </p>
-        <h2 className="text-zinc-100 mt-1 text-lg font-semibold">
+        <h2 className="text-primary mt-1 text-lg font-semibold">
           {current.title}
         </h2>
         {current.notes && (
-          <p className="text-zinc-500 mt-1 line-clamp-2 text-sm">
+          <p className="text-muted mt-1 line-clamp-2 text-sm">
             {current.notes}
           </p>
         )}
@@ -96,7 +96,7 @@ export function TriageSession({ items, onSchedule, onDelete, onClose }: Props) {
         <button
           type="button"
           onClick={onClose}
-          className="text-zinc-500 mt-3 w-full py-2 text-sm"
+          className="text-muted mt-3 w-full py-2 text-sm"
         >
           Skip for now
         </button>

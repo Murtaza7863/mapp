@@ -11,6 +11,7 @@ import { ITEM_TYPE_LABELS } from "../types";
 import { DatePickerField } from "./DatePickerField";
 
 interface Props {
+  sourceText?: string;
   items: ProposedItem[];
   actions: ProposedFeatureAction[];
   clarifications: string[];
@@ -23,7 +24,12 @@ interface Props {
   saving?: boolean;
 }
 
+function formatResolved(iso: string): string {
+  return format(parseISO(iso), "EEE MMM d · h:mm a");
+}
+
 export function ParseConfirmSheet({
+  sourceText,
   items,
   actions,
   clarifications,
@@ -55,53 +61,61 @@ export function ParseConfirmSheet({
 
   const confirmLabel = (() => {
     if (saving) return "Saving…";
+    if (selectedCount === 0) return "Skip";
     const parts: string[] = [];
-    if (selectedActions > 0) {
+    if (selectedItems > 0) {
       parts.push(
-        `${selectedActions} action${selectedActions === 1 ? "" : "s"}`,
+        `${selectedItems} item${selectedItems === 1 ? "" : "s"}`,
       );
     }
-    if (selectedItems > 0) {
-      parts.push(`${selectedItems} item${selectedItems === 1 ? "" : "s"}`);
+    if (selectedActions > 0) {
+      parts.push(
+        `${selectedActions} folder${selectedActions === 1 ? "" : "s"}/area${selectedActions === 1 ? "" : "s"}`,
+      );
     }
-    if (parts.length === 0) return "Add nothing";
     return `Add ${parts.join(" + ")}`;
   })();
 
   return (
     <div
-      className="bg-black/70 fixed inset-0 z-50 flex items-end backdrop-blur-md"
+      className="bg-overlay fixed inset-0 z-50 flex items-end"
       onClick={onClose}
     >
       <div
-        className="modal-sheet max-h-[85dvh] w-full overflow-y-auto rounded-t-3xl"
+        className="modal-sheet max-h-[85dvh] w-full overflow-y-auto rounded-t-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="modal-accent-bar rounded-t-3xl" />
+        <div className="modal-accent-bar rounded-t-xl" />
         <div className="p-5">
           <div className="mb-4 flex items-start justify-between gap-3">
             <div>
-              <h3 className="text-zinc-100 text-lg font-semibold">
-                Does this look right?
+              <h3 className="text-primary text-lg font-semibold">
+                Check before adding
               </h3>
-              <p className="text-zinc-500 mt-1 text-xs">
+              <p className="text-muted mt-1 text-xs">
                 {source === "llm"
-                  ? "Plotted on-device"
-                  : "Plotted with quick parse"}
-                . Edit before saving.
+                  ? "Parsed on your device."
+                  : "Quick parse."}{" "}
+                Edit anything that looks off.
               </p>
             </div>
             <button
               type="button"
               onClick={onClose}
-              className="text-zinc-500 text-sm"
+              className="text-muted text-sm"
             >
               Cancel
             </button>
           </div>
 
+          {sourceText && (
+            <p className="text-muted mb-4 border-rule rounded-lg border bg-paper px-3 py-2 font-mono text-xs leading-relaxed italic">
+              {sourceText}
+            </p>
+          )}
+
           {clarifications.length > 0 && (
-            <div className="border-amber-500/20 bg-amber-500/10 text-amber-200/90 mb-4 rounded-xl border px-3 py-2.5 text-xs leading-relaxed">
+            <div className="text-warn border-rule mb-4 rounded-lg border bg-paper px-3 py-2.5 text-xs leading-relaxed">
               {clarifications.map((note) => (
                 <p key={note}>{note}</p>
               ))}
@@ -110,7 +124,7 @@ export function ParseConfirmSheet({
 
           <div className="space-y-3">
             {actions.map((action) => (
-              <div key={action.id} className="item-card rounded-2xl p-3.5">
+              <div key={action.id} className="item-card rounded-lg p-3.5">
                 <div className="mb-2 flex items-start gap-3">
                   <input
                     type="checkbox"
@@ -151,21 +165,16 @@ export function ParseConfirmSheet({
                         ))}
                       </select>
                     )}
-                    <div className="text-zinc-500 flex flex-wrap gap-2 text-[11px]">
-                      <span className="bg-emerald-400/10 text-emerald-300 rounded-md px-2 py-1">
-                        {featureLabel(action.kind)}
-                      </span>
-                      <span className="bg-white/5 rounded-md px-2 py-1">
-                        {action.summary}
-                      </span>
-                    </div>
+                    <p className="text-muted text-[11px]">
+                      {featureLabel(action.kind)} · {action.summary}
+                    </p>
                   </div>
                 </div>
               </div>
             ))}
 
             {items.map((item) => (
-              <div key={item.id} className="item-card rounded-2xl p-3.5">
+              <div key={item.id} className="item-card rounded-lg p-3.5">
                 <div className="mb-2 flex items-start gap-3">
                   <input
                     type="checkbox"
@@ -176,6 +185,13 @@ export function ParseConfirmSheet({
                     className="mt-1"
                   />
                   <div className="min-w-0 flex-1 space-y-2">
+                    {item.dueAt && (
+                      <div className="resolve-row is-settled">
+                        <span className="resolve-token-done">
+                          {formatResolved(item.dueAt)}
+                        </span>
+                      </div>
+                    )}
                     <input
                       value={item.title}
                       onChange={(e) =>
@@ -228,24 +244,11 @@ export function ParseConfirmSheet({
                       placeholder="Due date (optional)"
                       className="text-xs"
                     />
-                    <div className="text-zinc-500 flex flex-wrap gap-2 text-[11px]">
-                      <span className="bg-white/5 rounded-md px-2 py-1">
-                        {ITEM_TYPE_LABELS[item.type]}
-                      </span>
-                      {item.dueAt && (
-                        <span className="bg-sky-400/10 text-sky-300 rounded-md px-2 py-1">
-                          {format(parseISO(item.dueAt), "EEE MMM d, h:mm a")}
-                        </span>
-                      )}
-                      {item.priority && (
-                        <span className="bg-amber-400/10 text-amber-300 rounded-md px-2 py-1">
-                          priority
-                        </span>
-                      )}
+                    <div className="text-muted flex flex-wrap gap-2 text-[11px]">
+                      <span>{ITEM_TYPE_LABELS[item.type]}</span>
+                      {item.priority && <span>priority</span>}
                       {item.parentFolderName && (
-                        <span className="bg-sky-400/10 text-sky-300 rounded-md px-2 py-1">
-                          in {item.parentFolderName}
-                        </span>
+                        <span>in {item.parentFolderName}</span>
                       )}
                     </div>
                   </div>
@@ -258,7 +261,7 @@ export function ParseConfirmSheet({
             type="button"
             disabled={saving || selectedCount === 0}
             onClick={onConfirm}
-            className="btn-primary mt-5 w-full rounded-xl py-3.5 text-sm font-medium disabled:opacity-40"
+            className="btn-primary mt-5 w-full rounded-lg py-3.5 text-sm font-medium disabled:opacity-40"
           >
             {confirmLabel}
           </button>

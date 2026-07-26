@@ -207,11 +207,11 @@ export function CategoryView() {
       {managing && (
         <div className="item-card rounded-xl p-4">
           <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-zinc-300 text-sm font-medium">Edit areas</h3>
+            <h3 className="text-primary text-sm font-medium">Edit areas</h3>
             <button
               type="button"
               onClick={() => setManaging(false)}
-              className="text-zinc-500 text-xs"
+              className="text-muted text-xs"
             >
               Done
             </button>
@@ -329,7 +329,7 @@ export function CategoryView() {
               }
             />
             {containersForArea.length === 0 ? (
-              <p className="text-zinc-600 text-xs">
+              <p className="text-muted text-xs">
                 No folders yet. Create one to group tasks
                 {selectedCategory.subgroups?.length
                   ? ` by ${selectedCategory.subgroups.join(", ").toLowerCase()}`
@@ -344,7 +344,7 @@ export function CategoryView() {
           <section className="section-block">
             <SectionHeader title="Tasks" count={looseItems.length} />
             {looseItems.length === 0 ? (
-              <p className="text-zinc-600 text-xs">No standalone tasks.</p>
+              <p className="text-muted text-xs">No standalone tasks.</p>
             ) : (
               renderTaskList(looseItems, selectedCategory)
             )}
@@ -370,7 +370,7 @@ export function CategoryView() {
                 >
                   <AreaDot color={cat.color} />
                   {cat.name}
-                  <span className="text-zinc-600 text-[11px] font-normal">
+                  <span className="text-muted text-[11px] font-normal">
                     tap to open
                   </span>
                 </button>
@@ -387,7 +387,7 @@ export function CategoryView() {
           })}
           {grouped.uncategorized.length > 0 && (
             <section className="section-block">
-              <div className="text-zinc-400 flex items-center gap-2 text-sm font-semibold">
+              <div className="text-muted flex items-center gap-2 text-sm font-semibold">
                 <FolderIcon className="h-4 w-4" />
                 Uncategorized
               </div>
@@ -400,7 +400,7 @@ export function CategoryView() {
       )}
 
       {selectedId === "all" ? (
-        <p className="text-zinc-600 border-zinc-800 rounded-xl border border-dashed px-4 py-3.5 text-center text-sm">
+        <p className="text-muted border-zinc-800 rounded-xl border border-dashed px-4 py-3.5 text-center text-sm">
           Select an area above to add tasks or folders
         </p>
       ) : (
@@ -408,14 +408,14 @@ export function CategoryView() {
           <button
             type="button"
             onClick={() => setShowFolderForm(true)}
-            className="border-zinc-800 text-zinc-400 flex-1 rounded-xl border border-dashed py-3.5"
+            className="border-zinc-800 text-muted flex-1 rounded-xl border border-dashed py-3.5"
           >
             + New folder
           </button>
           <button
             type="button"
             onClick={() => setShowForm(true)}
-            className="border-zinc-800 text-zinc-400 flex-1 rounded-xl border border-dashed py-3.5"
+            className="border-zinc-800 text-muted flex-1 rounded-xl border border-dashed py-3.5"
           >
             + Add task
           </button>

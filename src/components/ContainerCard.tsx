@@ -35,11 +35,11 @@ export function ContainerCard({
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <h3 className="text-zinc-100 truncate text-[15px] font-medium">
+          <h3 className="text-primary truncate text-[15px] font-medium">
             {item.title}
           </h3>
           {subtitle && (
-            <p className="text-zinc-500 mt-0.5 text-[11px]">{subtitle}</p>
+            <p className="text-muted mt-0.5 text-[11px]">{subtitle}</p>
           )}
           {exam && (
             <p className="text-amber-400/90 mt-0.5 text-[11px]">
@@ -47,12 +47,12 @@ export function ContainerCard({
             </p>
           )}
           {item.notes && (
-            <p className="text-zinc-600 mt-1 line-clamp-1 text-[11px]">
+            <p className="text-muted mt-1 line-clamp-1 text-[11px]">
               {item.notes}
             </p>
           )}
         </div>
-        <span className="text-zinc-500 shrink-0 text-[11px] tabular-nums">
+        <span className="text-muted shrink-0 text-[11px] tabular-nums">
           {progress.label}
         </span>
       </div>

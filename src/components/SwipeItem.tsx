@@ -14,7 +14,6 @@ interface Props {
   item: Item;
   category?: Category;
   parentFolderName?: string;
-  /** Extra command-center reason (e.g. chase nudge) */
   reason?: string;
   onDone: () => void;
   onSnooze: () => void;
@@ -22,6 +21,16 @@ interface Props {
   onDelete: () => void;
   compact?: boolean;
   showType?: boolean;
+}
+
+function timeLabel(item: Item): string | null {
+  if (item.status === "snoozed" && item.snoozedUntil) {
+    return format(parseISO(item.snoozedUntil), "h:mm a");
+  }
+  if (item.dueAt) {
+    return format(parseISO(item.dueAt), "h:mm a");
+  }
+  return null;
 }
 
 export function SwipeItem({
@@ -78,7 +87,7 @@ export function SwipeItem({
 
   const overdue = item.status === "pending" && isOverdue(item);
   const snoozed = item.status === "snoozed";
-  const accent = category?.color ?? "#52525b";
+  const accent = category?.color ?? "#5c6b7a";
   const waitingDays =
     item.type === "follow-up"
       ? differenceInCalendarDays(
@@ -87,17 +96,18 @@ export function SwipeItem({
         )
       : null;
   const struck = completing || item.status === "done";
+  const time = timeLabel(item);
 
   return (
-    <div className="relative overflow-hidden rounded-xl">
-      <div className="swipe-underlay bg-emerald-500/20 text-emerald-300 absolute inset-y-0 left-0 w-20 items-center justify-center text-[11px] font-medium">
+    <div className="relative overflow-hidden rounded-lg">
+      <div className="swipe-underlay bg-block/10 text-block absolute inset-y-0 left-0 w-20 items-center justify-center text-[11px] font-medium">
         Done
       </div>
-      <div className="swipe-underlay bg-amber-500/15 text-amber-200/90 absolute inset-y-0 right-0 w-20 items-center justify-center text-[11px] font-medium">
+      <div className="swipe-underlay bg-warn/10 text-warn absolute inset-y-0 right-0 w-20 items-center justify-center text-[11px] font-medium">
         {snoozed ? "Later" : "Snooze"}
       </div>
       <div
-        className="item-card relative z-10 cursor-pointer overflow-hidden rounded-xl transition-transform duration-150 ease-out"
+        className="item-card relative z-10 cursor-pointer overflow-hidden rounded-lg transition-transform duration-150 ease-out"
         style={{
           transform: `translateX(${offset}px)`,
           borderLeftWidth: 3,
@@ -111,8 +121,14 @@ export function SwipeItem({
         }}
       >
         <div
-          className={`flex items-start gap-3 ${compact ? "p-3" : "px-3.5 py-3"}`}
+          className={`flex items-start gap-2.5 ${compact ? "p-3" : "px-3 py-2.5"}`}
         >
+          {time && (
+            <span className="timeline-time shrink-0 pt-0.5 tabular-nums">
+              {time}
+            </span>
+          )}
+
           {item.type !== "note" && item.status !== "done" && (
             <button
               type="button"
@@ -121,7 +137,7 @@ export function SwipeItem({
                 e.stopPropagation();
                 complete();
               }}
-              className="check-circle mt-0.5 -ml-1 flex h-11 w-11 shrink-0 items-center justify-center"
+              className="check-circle -ml-1 flex h-10 w-10 shrink-0 items-center justify-center"
             >
               <span
                 className={`flex h-5 w-5 items-center justify-center rounded border ${
@@ -132,7 +148,7 @@ export function SwipeItem({
                   backgroundColor: completing ? accent : "transparent",
                 }}
               >
-                {completing && <CheckIcon className="text-white h-3 w-3" />}
+                {completing && <CheckIcon className="h-3 w-3 text-white" />}
               </span>
             </button>
           )}
@@ -140,93 +156,74 @@ export function SwipeItem({
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
               {item.priority && (
-                <StarIcon
-                  filled
-                  className="text-amber-500/90 h-3 w-3 shrink-0"
-                />
+                <StarIcon filled className="text-warn h-3 w-3 shrink-0" />
               )}
               <h3
                 className={`truncate text-[15px] leading-snug font-medium ${
-                  struck ? "text-zinc-600 line-through" : "text-zinc-100"
+                  struck ? "text-muted line-through" : "text-primary"
                 }`}
               >
                 {item.title}
               </h3>
             </div>
 
-            <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px]">
+            <div className="text-muted mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px]">
               {showType && item.type !== "follow-up" && (
                 <span className="type-pill">{ITEM_TYPE_LABELS[item.type]}</span>
               )}
               {item.type === "follow-up" && item.pipelineStage && (
-                <span className="text-zinc-500">
-                  {stageLabel(item.pipelineStage)}
-                </span>
+                <span>{stageLabel(item.pipelineStage)}</span>
               )}
               {snoozed && item.snoozedUntil && (
-                <span className="text-amber-400/80">
+                <span className="text-warn">
                   {formatSnoozedUntil(item.snoozedUntil)}
                 </span>
               )}
               {!snoozed && item.dueAt && (
-                <span className={overdue ? "text-red-400/90" : "text-zinc-500"}>
+                <span className={overdue ? "text-danger" : undefined}>
                   {overdue ? "Overdue · " : ""}
                   {formatDue(item.dueAt)}
                 </span>
               )}
-              {getChildGroup(item) && (
-                <span className="text-zinc-500">{getChildGroup(item)}</span>
-              )}
-              {parentFolderName && (
-                <span className="text-zinc-500">in {parentFolderName}</span>
-              )}
+              {getChildGroup(item) && <span>{getChildGroup(item)}</span>}
+              {parentFolderName && <span>in {parentFolderName}</span>}
               {item.checkBackAt && item.type === "follow-up" && (
-                <span className="text-violet-400/80">
+                <span>
                   Look back {format(parseISO(item.checkBackAt), "MMM d")}
                 </span>
               )}
               {item.linkedEventAt && item.type === "follow-up" && (
-                <span className="text-violet-400/70">
+                <span>
                   Prep{" "}
                   {formatDeadlineDate(
                     gpdDueFromEvent(item.linkedEventAt).toISOString(),
                   )}
                 </span>
               )}
-              {item.notificationsMuted && (
-                <span className="text-zinc-600">muted</span>
-              )}
-              {category && (
-                <span className="text-zinc-500">{category.name}</span>
-              )}
+              {item.notificationsMuted && <span>muted</span>}
+              {category && <span>{category.name}</span>}
               {waitingDays !== null && waitingDays > 0 && (
-                <span
-                  className={
-                    waitingDays >= 7 ? "text-amber-400/90" : "text-zinc-600"
-                  }
-                >
+                <span className={waitingDays >= 7 ? "text-warn" : undefined}>
                   {waitingDays}d waiting
                 </span>
               )}
             </div>
 
             {(item.contactName || item.waitingOn) && (
-              <p className="text-zinc-600 mt-0.5 truncate text-[11px]">
+              <p className="text-muted mt-0.5 truncate text-[11px]">
                 {item.contactName ?? item.waitingOn}
               </p>
             )}
             {item.type === "follow-up" && item.nextAction && (
-              <p className="text-amber-400/80 mt-0.5 truncate text-[11px]">
+              <p className="text-warn mt-0.5 truncate text-[11px]">
                 → {item.nextAction}
               </p>
             )}
             {reason && (
-              <p className="text-amber-400/80 mt-0.5 truncate text-[11px]">
-                {reason}
-              </p>
+              <p className="text-warn mt-0.5 truncate text-[11px]">{reason}</p>
             )}
             {item.notes && !compact && (
-              <p className="text-zinc-600 mt-0.5 line-clamp-1 text-[11px]">
+              <p className="text-muted mt-0.5 line-clamp-1 text-[11px]">
                 {item.notes}
               </p>
             )}
@@ -240,7 +237,7 @@ export function SwipeItem({
                   e.stopPropagation();
                   onSnooze();
                 }}
-                className="text-zinc-600 hover:text-amber-300 rounded p-1"
+                className="text-muted hover:text-warn rounded p-1"
                 aria-label="Snooze"
               >
                 <ClockIcon className="h-3.5 w-3.5" />
@@ -252,7 +249,7 @@ export function SwipeItem({
                 e.stopPropagation();
                 onDelete();
               }}
-              className="text-zinc-600 hover:text-zinc-400 rounded p-1"
+              className="text-muted hover:text-primary rounded p-1"
               aria-label="Delete"
             >
               <CloseIcon className="h-3.5 w-3.5" />

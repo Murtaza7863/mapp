@@ -26,11 +26,11 @@ export function NudgeQueue({
   return (
     <section className="nudge-queue" aria-label="Nudge queue">
       <div className="mb-2 flex items-center justify-between">
-        <h2 className="text-violet-300 text-sm font-semibold">
+        <h2 className="text-primary text-sm font-semibold">
           Work these first
         </h2>
         {suggestions.length > max && (
-          <span className="text-zinc-500 text-[11px]">
+          <span className="text-muted text-[11px]">
             +{suggestions.length - max} more in feed
           </span>
         )}
@@ -57,10 +57,10 @@ export function NudgeQueue({
                     aria-hidden
                   />
                   <div className="min-w-0 flex-1">
-                    <p className="text-zinc-100 truncate text-[15px] font-medium">
+                    <p className="text-primary truncate text-[15px] font-medium">
                       {suggestion.title}
                     </p>
-                    <p className="text-amber-400/80 mt-0.5 text-[11px]">
+                    <p className="text-warn mt-0.5 text-[11px]">
                       {suggestion.reason}
                     </p>
                   </div>

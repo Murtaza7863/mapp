@@ -6,8 +6,8 @@ import type { Category } from "../types";
 import { checkWebGPU, warmupPlotEngine } from "../lib/brain-dump/llm-engine";
 import { readClipboardText } from "../lib/clipboard";
 import { parseBrainDump } from "../lib/brain-dump/parse-dump";
-import { ArrowRightIcon, SparkIcon } from "./icons";
 import { ParseConfirmSheet } from "./ParseConfirmSheet";
+import { ResolveStrip } from "./ResolveStrip";
 
 interface Props {
   categories: Category[];
@@ -19,7 +19,7 @@ type Phase = "idle" | "loading-model" | "parsing" | "confirm";
 
 export function PlotBar({ categories, onParsed, initialText }: Props) {
   const [value, setValue] = useState(initialText ?? "");
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(Boolean(initialText));
   const [phase, setPhase] = useState<Phase>("idle");
   const [useLlm, setUseLlm] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,7 +64,7 @@ export function PlotBar({ categories, onParsed, initialText }: Props) {
       });
 
       if (parsed.items.length === 0 && parsed.actions.length === 0) {
-        setError("Nothing to plot — try a task or app action per line.");
+        setError("Nothing found — try a task with a day or time.");
         setPhase("idle");
         return;
       }
@@ -73,7 +73,7 @@ export function PlotBar({ categories, onParsed, initialText }: Props) {
       setPhase("confirm");
       setExpanded(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not plot that");
+      setError(err instanceof Error ? err.message : "Could not parse that");
       setPhase("idle");
     }
   };
@@ -87,57 +87,57 @@ export function PlotBar({ categories, onParsed, initialText }: Props) {
 
   return (
     <>
-      <div className="compose-bar-wrap mb-3">
-        <div
-          className={`compose-bar ${expanded ? "compose-bar-expanded" : ""} ${busy ? "compose-bar-busy" : ""}`}
-        >
-          <SparkIcon className="compose-bar-icon h-4 w-4 shrink-0" />
-          <textarea
-            ref={inputRef}
-            value={value}
-            rows={expanded ? 3 : 1}
-            onChange={(e) => {
-              setValue(e.target.value);
-              if (e.target.value.includes("\n")) setExpanded(true);
-            }}
-            onFocus={() => setExpanded(true)}
-            onBlur={() => {
-              if (!value.includes("\n") && value.length < 48)
-                setExpanded(false);
-            }}
-            onKeyDown={onKeyDown}
-            placeholder="Plot tasks, folders, threads…"
-            className="compose-bar-input"
-            aria-label="Plot tasks"
-          />
-          <button
-            type="button"
-            onClick={() => void paste()}
-            className="compose-bar-go mr-1 opacity-70"
-            aria-label="Paste from clipboard"
-            title="Paste"
+      <section className="capture-hero" aria-label="Add to calendar">
+        <div className="compose-bar-wrap">
+          <div
+            className={`compose-bar ${expanded ? "compose-bar-expanded" : ""} ${busy ? "compose-bar-busy" : ""}`}
           >
-            <span className="text-[10px] font-semibold">⌘V</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => void runPlot()}
-            disabled={!canSubmit}
-            className="compose-bar-go"
-            aria-label="Plot"
-          >
-            {busy ? (
-              <span className="compose-bar-spinner" />
-            ) : (
-              <ArrowRightIcon className="h-4 w-4" />
-            )}
-          </button>
+            <textarea
+              ref={inputRef}
+              value={value}
+              rows={expanded ? 4 : 2}
+              onChange={(e) => {
+                setValue(e.target.value);
+                if (e.target.value.includes("\n")) setExpanded(true);
+              }}
+              onFocus={() => setExpanded(true)}
+              onKeyDown={onKeyDown}
+              placeholder="Dentist Tuesday 3pm, email Jake Friday…"
+              className="compose-bar-input"
+              aria-label="Type a plan to add to calendar"
+            />
+            <div className="compose-bar-actions">
+              <button
+                type="button"
+                onClick={() => void paste()}
+                className="compose-bar-secondary"
+                aria-label="Paste from clipboard"
+              >
+                Paste
+              </button>
+              <button
+                type="button"
+                onClick={() => void runPlot()}
+                disabled={!canSubmit}
+                className="compose-bar-go"
+                aria-label="Add to calendar"
+              >
+                {busy ? (
+                  <span className="compose-bar-spinner" />
+                ) : (
+                  "Add to calendar"
+                )}
+              </button>
+            </div>
+          </div>
+          {error && <p className="compose-bar-error">{error}</p>}
         </div>
-        {error && <p className="compose-bar-error">{error}</p>}
-      </div>
+        <ResolveStrip text={value} categories={categories} />
+      </section>
 
       {phase === "confirm" && result && (
         <ParseConfirmSheet
+          sourceText={value}
           items={result.items}
           actions={result.actions}
           clarifications={result.clarifications}

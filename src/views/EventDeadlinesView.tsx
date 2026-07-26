@@ -74,7 +74,7 @@ export function EventDeadlinesView() {
 
           {threads.length > 0 && (
             <section className="section-block">
-              <h2 className="text-zinc-400 mb-2 text-xs font-semibold tracking-wide uppercase">
+              <h2 className="text-muted mb-2 text-xs font-semibold tracking-wide uppercase">
                 All threads
               </h2>
               <div className="item-list">

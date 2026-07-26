@@ -6,23 +6,20 @@ import type { FeedEntry, FeedFocus } from "../lib/feed";
 import type { Item } from "../types";
 
 import { EventDeadlinesSection } from "../components/EventDeadlinesSection";
-import { DailyBriefingCard } from "../components/DailyBriefingCard";
 import { StarIcon } from "../components/icons";
 import { ItemForm, SnoozeSheet } from "../components/ItemForm";
 import { LoadingView } from "../components/LoadingView";
-import { MomentumBar } from "../components/MomentumBar";
 import { NudgeQueue } from "../components/NudgeQueue";
 import { PlotBar } from "../components/PlotBar";
 import { QuickAddBar } from "../components/QuickAddBar";
+import { StatusLine } from "../components/StatusLine";
 import { SwipeItem } from "../components/SwipeItem";
 import { ThreadActions } from "../components/ThreadActions";
-import { TodayStats } from "../components/TodayStats";
 import { TriageSession } from "../components/TriageSession";
 import { WrapUpSheet, tomorrowMorning } from "../components/WrapUpSheet";
 import {
   EmptyState,
   FilterPill,
-  PageHeader,
   SectionHeader,
 } from "../components/ui";
 import { useCategories } from "../hooks/useCategories";
@@ -274,45 +271,48 @@ export function TodayView() {
 
   return (
     <div className="view-page">
-      <PageHeader
-        title="Command center"
-        subtitle={
-          fullFeed.length === 0
-            ? "Nothing active"
-            : feedFocus || areaFilter
-              ? `${feed.length} focused · ${fullFeed.length} active`
-              : `${fullFeed.length} active`
-        }
-        showDate
-        action={
-          <button
-            type="button"
-            onClick={() => setShowForm(true)}
-            className="btn-primary min-h-[44px] shrink-0 rounded-lg px-4 py-2 text-sm"
-          >
-            + Add
-          </button>
-        }
+      <div className="mb-1 flex items-center justify-between gap-3">
+        <p className="text-muted text-xs sm:hidden">
+          {new Date().toLocaleDateString(undefined, {
+            weekday: "long",
+            month: "long",
+            day: "numeric",
+          })}
+        </p>
+        <button
+          type="button"
+          onClick={() => setShowForm(true)}
+          className="btn-ghost ml-auto min-h-[40px] shrink-0 rounded-lg px-3 py-2 text-sm"
+        >
+          Add item
+        </button>
+      </div>
+
+      <PlotBar
+        categories={categories}
+        initialText={plotPasteText}
+        onParsed={handlePlot}
       />
 
-      <DailyBriefingCard
+      <QuickAddBar
+        categories={categories}
+        onPasteToPlot={(text) => setPlotPasteText(text)}
+        onAdd={async (data) => {
+          const created = await addItem(data);
+          if (created.categoryId) setLastCategoryId(created.categoryId);
+          toast("Added", { kind: "success" });
+        }}
+      />
+
+      <StatusLine
         briefing={briefing}
-        onFocusNudge={() => setFeedFocus("chase")}
-        onFocusOverdue={() => setFeedFocus("overdue")}
-        onFocusPrep={() => setFeedFocus("prep")}
+        summary={summary}
+        momentum={momentum}
+        focus={feedFocus}
+        onFocusChange={setFeedFocus}
+        onTriage={openTriage}
         onWrapUp={() => setWrapUpOpen(true)}
         showWrapUp={isWrapUpTime()}
-      />
-
-      <MomentumBar momentum={momentum} />
-
-      <TodayStats
-        summary={summary}
-        focus={feedFocus}
-        areaFilter={areaFilter}
-        onFocusChange={setFeedFocus}
-        onAreaFilterChange={setAreaFilter}
-        onTriage={openTriage}
       />
 
       {summary.triage > 0 && !triageOpen && (
@@ -320,19 +320,12 @@ export function TodayView() {
           type="button"
           onClick={openTriage}
           className="home-threads-banner w-full text-left"
-          style={{
-            borderColor: "rgba(251, 146, 60, 0.25)",
-            background: "rgba(251, 146, 60, 0.08)",
-            color: "#fdba74",
-          }}
         >
           <span>
-            {summary.triage} new capture{summary.triage === 1 ? "" : "s"} need a
-            date
+            {summary.triage} capture{summary.triage === 1 ? "" : "s"} still need
+            a date
           </span>
-          <span className="home-threads-banner-cta" style={{ color: "#fb923c" }}>
-            Triage →
-          </span>
+          <span className="home-threads-banner-cta">Set dates →</span>
         </button>
       )}
 
@@ -343,10 +336,10 @@ export function TodayView() {
           className="home-threads-banner w-full text-left"
         >
           <span>
-            {summary.needsNudge} thread{summary.needsNudge === 1 ? "" : "s"} need
-            a nudge
+            {summary.needsNudge} thread{summary.needsNudge === 1 ? "" : "s"} to
+            nudge
           </span>
-          <span className="home-threads-banner-cta">Work nudges →</span>
+          <span className="home-threads-banner-cta">Work through →</span>
         </button>
       )}
 
@@ -363,22 +356,6 @@ export function TodayView() {
           }}
         />
       )}
-
-      <QuickAddBar
-        categories={categories}
-        onPasteToPlot={(text) => setPlotPasteText(text)}
-        onAdd={async (data) => {
-          const created = await addItem(data);
-          if (created.categoryId) setLastCategoryId(created.categoryId);
-          toast("Added", { kind: "success" });
-        }}
-      />
-
-      <PlotBar
-        categories={categories}
-        initialText={plotPasteText}
-        onParsed={handlePlot}
-      />
 
       <EventDeadlinesSection
         items={items}
@@ -434,7 +411,7 @@ export function TodayView() {
         {chaseCount > 0 && (
           <Link
             to="/follow-ups"
-            className="text-zinc-500 ml-auto text-[11px] font-medium"
+            className="text-muted ml-auto text-[11px] font-medium"
           >
             All threads
           </Link>
@@ -443,18 +420,18 @@ export function TodayView() {
 
       {fullFeed.length === 0 && eventDeadlineCount === 0 ? (
         <EmptyState
-          title="Clear"
-          description="Quick add, Plot something, or tap + Add to get started"
+          title="Nothing scheduled"
+          description="Type a plan above to add it to your calendar"
         />
       ) : feed.length === 0 ? (
         <EmptyState
-          title="Nothing in this focus"
-          description="Tap All active or clear summary filters"
+          title="Nothing in this view"
+          description="Clear filters to see everything active"
         />
       ) : chaseMode ? (
         <div className="page-block">
           <SectionHeader
-            title="Nudge session"
+            title="Nudges"
             count={feed.length}
             action={
               <div className="flex items-center gap-2">
@@ -462,7 +439,7 @@ export function TodayView() {
                   <button
                     type="button"
                     onClick={() => void bulkBumpChase()}
-                    className="text-violet-300 text-[11px] font-medium"
+                    className="text-block text-[11px] font-medium"
                   >
                     Bump all
                   </button>
@@ -470,7 +447,7 @@ export function TodayView() {
                 <button
                   type="button"
                   onClick={() => setFeedFocus(null)}
-                  className="text-zinc-500 text-[11px] font-medium"
+                  className="text-muted text-[11px] font-medium"
                 >
                   Exit
                 </button>

@@ -32,7 +32,7 @@ export function EventDeadlinesSection({ items, onSelect, compact }: Props) {
           Event prep deadlines
         </div>
         {(!compact || entries.length > 3) && (
-          <Link to="/deadlines" className="text-zinc-500 text-[11px]">
+          <Link to="/deadlines" className="text-muted text-[11px]">
             View all
           </Link>
         )}
@@ -55,10 +55,10 @@ export function EventDeadlinesSection({ items, onSelect, compact }: Props) {
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="text-zinc-100 truncate text-[15px] font-medium">
+                  <p className="text-primary truncate text-[15px] font-medium">
                     {entry.item.contactName ?? entry.item.title}
                   </p>
-                  <p className="text-zinc-500 mt-0.5 text-[11px]">
+                  <p className="text-muted mt-0.5 text-[11px]">
                     Event {formatDeadlineDate(entry.linkedEventAt)} · Prep due{" "}
                     {formatDeadlineDate(entry.prepDueAt)}
                   </p>
@@ -69,7 +69,7 @@ export function EventDeadlinesSection({ items, onSelect, compact }: Props) {
                       ? "text-red-400"
                       : urgency === "medium"
                         ? "text-amber-400"
-                        : "text-zinc-500"
+                        : "text-muted"
                   }`}
                 >
                   {entry.daysUntilPrep <= 0 ? "Due" : `${entry.daysUntilPrep}d`}

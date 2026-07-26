@@ -84,16 +84,16 @@ export function InsightsView() {
       </div>
 
       {insights.busiestDay && (
-        <p className="text-zinc-400 mb-4 text-sm">
+        <p className="text-muted mb-4 text-sm">
           Busiest day:{" "}
-          <span className="text-zinc-200">
+          <span className="text-primary">
             {format(new Date(insights.busiestDay), "EEEE, MMM d")}
           </span>
         </p>
       )}
 
       <section className="mb-6">
-        <h2 className="text-zinc-500 mb-2 text-xs font-semibold tracking-wider uppercase">
+        <h2 className="text-muted mb-2 text-xs font-semibold tracking-wider uppercase">
           By type this week
         </h2>
         <div className="space-y-2">
@@ -107,7 +107,7 @@ export function InsightsView() {
               className="bg-zinc-950 flex items-center justify-between rounded-xl px-4 py-3"
             >
               <TypeBadge type={type} />
-              <span className="text-zinc-300 font-medium">
+              <span className="text-primary font-medium">
                 {insights.completionsByType[type]}
               </span>
             </div>
@@ -117,7 +117,7 @@ export function InsightsView() {
 
       {insights.completionsByCategory.length > 0 && (
         <section className="mb-6">
-          <h2 className="text-zinc-500 mb-2 text-xs font-semibold tracking-wider uppercase">
+          <h2 className="text-muted mb-2 text-xs font-semibold tracking-wider uppercase">
             By category this week
           </h2>
           <div className="space-y-2">
@@ -127,7 +127,7 @@ export function InsightsView() {
                 className="bg-zinc-950 flex items-center justify-between rounded-xl px-4 py-3"
               >
                 <CategoryBadge category={category} size="md" />
-                <span className="text-zinc-300 font-medium">{count}</span>
+                <span className="text-primary font-medium">{count}</span>
               </div>
             ))}
           </div>
@@ -136,7 +136,7 @@ export function InsightsView() {
 
       <section className="border-zinc-900 bg-zinc-950/50 rounded-xl border p-4">
         <h2 className="mb-2 font-semibold">Overview</h2>
-        <p className="text-zinc-400 text-sm">
+        <p className="text-muted text-sm">
           {total} items · {completions.length} completions logged
         </p>
       </section>

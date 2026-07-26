@@ -37,14 +37,14 @@ export function ThreadActions({ item, onUpdate }: Props) {
           className={`min-h-[36px] rounded-lg px-2.5 py-1.5 text-[11px] font-medium ${
             item.pipelineStage === action.stage
               ? "bg-violet-500/20 text-violet-200"
-              : "bg-white/5 text-zinc-400 active:bg-white/10"
+              : "bg-white/5 text-muted active:bg-white/10"
           }`}
         >
           {action.label}
         </button>
       ))}
       {item.pipelineStage && (
-        <span className="text-zinc-600 self-center text-[10px]">
+        <span className="text-muted self-center text-[10px]">
           {PIPELINE_STAGE_LABELS[item.pipelineStage]}
         </span>
       )}
