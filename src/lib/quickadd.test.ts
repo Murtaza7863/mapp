@@ -122,4 +122,21 @@ describe("parseQuickAdd", () => {
     expect(urgent.priority).toBe(true);
     expect(urgent.title).toBe("pay rent");
   });
+
+  it("parses thread contact and next action", () => {
+    const p = parseQuickAdd(
+      "follow-up: deck review @Jake → send v2",
+      categories,
+      NOW,
+    );
+    expect(p.type).toBe("follow-up");
+    expect(p.contactName).toBe("Jake");
+    expect(p.nextAction).toBe("send v2");
+    expect(p.title).toBe("deck review");
+
+    const re = parseQuickAdd("bump re: Acme Corp", categories, NOW);
+    expect(re.type).toBe("follow-up");
+    expect(re.contactName).toBe("Acme Corp");
+    expect(re.title).toBe("bump");
+  });
 });

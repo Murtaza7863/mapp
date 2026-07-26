@@ -29,6 +29,7 @@ describe("stats", () => {
     expect(summary.overdue).toBe(1);
     expect(summary.routines).toBe(1);
     expect(summary.openThreads).toBe(1);
+    expect(summary.needsNudge).toBe(0);
     expect(summary.byCategory.length).toBeGreaterThan(0);
   });
 

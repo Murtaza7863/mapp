@@ -10,7 +10,8 @@ const CHIP_STYLES: Record<string, string> = {
   Overdue: "text-red-400 border-red-400/20 bg-red-400/8",
   Today: "text-sky-300 border-sky-400/20 bg-sky-400/8",
   Routines: "text-emerald-300 border-emerald-400/20 bg-emerald-400/8",
-  Threads: "text-violet-300 border-violet-400/20 bg-violet-400/8",
+  Nudge: "text-violet-300 border-violet-400/20 bg-violet-400/8",
+  Open: "text-violet-300/70 border-violet-400/15 bg-violet-400/5",
   Snoozed: "text-amber-300 border-amber-400/20 bg-amber-400/8",
   Priority: "text-yellow-300 border-yellow-400/20 bg-yellow-400/8",
 };
@@ -19,7 +20,7 @@ const CHIP_FOCUS: Record<string, FeedFocus> = {
   Overdue: "overdue",
   Today: "today",
   Routines: "routine",
-  Threads: "follow-up",
+  Nudge: "chase",
   Snoozed: "snoozed",
   Priority: "priority",
 };
@@ -43,7 +44,8 @@ export function TodayStats({
     { label: "Overdue", value: summary.overdue },
     { label: "Today", value: summary.dueToday },
     { label: "Routines", value: summary.routines },
-    { label: "Threads", value: summary.openThreads },
+    { label: "Nudge", value: summary.needsNudge },
+    { label: "Open", value: summary.openThreads, link: "/follow-ups" },
     { label: "Snoozed", value: summary.snoozed },
     { label: "Priority", value: summary.priority },
   ].filter((c) => c.value > 0);
@@ -69,6 +71,15 @@ export function TodayStats({
           const className = `stat-chip rounded-full border px-3 py-1 text-xs font-semibold ${CHIP_STYLES[chip.label]} ${
             active ? "ring-1 ring-white/30" : ""
           }`;
+
+          if ("link" in chip && chip.link) {
+            return (
+              <Link key={chip.label} to={chip.link} className={className}>
+                <span className="mr-1 opacity-70">{chip.value}</span>
+                {chip.label}
+              </Link>
+            );
+          }
 
           if (!onFocusChange || !chipFocus) {
             return (

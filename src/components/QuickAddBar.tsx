@@ -18,17 +18,22 @@ export function QuickAddBar({ categories, onAdd }: Props) {
     const parsed = parseQuickAdd(trimmed, categories);
     if (!parsed.title.trim()) return;
 
+    const isFollowUp =
+      parsed.type === "follow-up" ||
+      /\bfollow|email|call|bump\b/i.test(trimmed);
+
     setSaving(true);
     try {
       await onAdd({
         title: parsed.title,
-        type: parsed.type ?? "deadline",
+        type: isFollowUp ? "follow-up" : (parsed.type ?? "deadline"),
         categoryId: parsed.categoryId ?? categories[0]?.id,
         dueAt: parsed.dueAt,
         priority: parsed.priority,
-        ...(parsed.type === "follow-up" || /\bfollow|email|call|bump\b/i.test(trimmed)
+        ...(parsed.contactName ? { contactName: parsed.contactName } : {}),
+        ...(parsed.nextAction ? { nextAction: parsed.nextAction } : {}),
+        ...(isFollowUp
           ? {
-              type: "follow-up" as const,
               pipelineStage: "outreach" as const,
               lastContactAt: new Date().toISOString(),
             }
@@ -48,7 +53,7 @@ export function QuickAddBar({ categories, onAdd }: Props) {
         onKeyDown={(e) => {
           if (e.key === "Enter") void submit();
         }}
-        placeholder="Quick add — pay rent tomorrow !"
+        placeholder="Quick add — bump @jake → send deck"
         className="input-field min-w-0 flex-1 rounded-xl px-3.5 py-2.5 text-sm"
         aria-label="Quick add task"
       />

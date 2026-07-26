@@ -39,4 +39,15 @@ describe("buildScheduledNotifications", () => {
     const scheduled = buildScheduledNotifications([thread], now);
     expect(scheduled.some((s) => s.id.endsWith("-checkback"))).toBe(true);
   });
+
+  it("schedules chase nudges for stale threads", () => {
+    const thread = createItem({
+      title: "Outreach",
+      type: "follow-up",
+      pipelineStage: "waiting",
+      lastContactAt: "2026-07-10T12:00:00",
+    });
+    const scheduled = buildScheduledNotifications([thread], now);
+    expect(scheduled.some((s) => s.id.endsWith("-chase"))).toBe(true);
+  });
 });

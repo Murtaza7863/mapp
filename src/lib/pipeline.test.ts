@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { createItem } from "./items";
-import { buildSuggestions, gpdDueFromEvent, needsChase } from "./pipeline";
+import { buildSuggestions, countNeedsChase, gpdDueFromEvent, needsChase } from "./pipeline";
 
 describe("pipeline", () => {
   it("computes GPD due 10 weeks before event", () => {
@@ -34,6 +34,24 @@ describe("pipeline", () => {
       lastContactAt: "2026-07-15T12:00:00",
     });
     expect(needsChase(item)).toBe(true);
+    vi.useRealTimers();
+  });
+
+  it("counts needs chase", () => {
+    vi.setSystemTime(new Date("2026-07-26T12:00:00"));
+    const stale = createItem({
+      title: "Stale",
+      type: "follow-up",
+      pipelineStage: "waiting",
+      lastContactAt: "2026-07-10T12:00:00",
+    });
+    const fresh = createItem({
+      title: "Fresh",
+      type: "follow-up",
+      pipelineStage: "waiting",
+      lastContactAt: new Date().toISOString(),
+    });
+    expect(countNeedsChase([stale, fresh])).toBe(1);
     vi.useRealTimers();
   });
 });

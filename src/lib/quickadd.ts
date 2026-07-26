@@ -8,6 +8,8 @@ export interface ParsedQuickAdd {
   categoryId?: string;
   categoryName?: string;
   type?: ItemType;
+  contactName?: string;
+  nextAction?: string;
 }
 
 const WEEKDAYS = [
@@ -54,6 +56,8 @@ export function parseQuickAdd(
   let priority = false;
   let categoryId: string | undefined;
   let categoryName: string | undefined;
+  let contactName: string | undefined;
+  let nextAction: string | undefined;
   let hour: number | null = null;
   let minute = 0;
   let dayOffset: number | null = null;
@@ -82,6 +86,33 @@ export function parseQuickAdd(
       categoryName = cat.name;
     }
     text = text.replace(catMatch[0], " ");
+  }
+
+  const nextActionMatch = text.match(/\s(?:→|->)\s*(.+?)(?=\s*$)/);
+  if (nextActionMatch) {
+    nextAction = nextActionMatch[1].trim();
+    text = text.replace(nextActionMatch[0], " ");
+  }
+
+  const reMatch = text.match(/\sre:\s*([^@#!]+?)(?=\s+#|\s+!|\s+@|\s*$)/i);
+  if (reMatch) {
+    contactName = reMatch[1].trim();
+    text = text.replace(reMatch[0], " ");
+  } else {
+    const atMatch = text.match(/\s@([\w][\w\s.-]{0,40}?)(?=\s+#|\s+!|\s+re:|\s*$)/i);
+    if (atMatch) {
+      contactName = atMatch[1].trim();
+      text = text.replace(atMatch[0], " ");
+    }
+  }
+
+  if (
+    !type &&
+    (/\b(follow[- ]?up|bump|email|call|reach out)\b/i.test(raw) ||
+      contactName ||
+      nextAction)
+  ) {
+    type = "follow-up";
   }
 
   const t12 = text.match(
@@ -205,5 +236,14 @@ export function parseQuickAdd(
   }
 
   const title = text.replace(/\s+/g, " ").trim();
-  return { title, dueAt, priority, categoryId, categoryName, type };
+  return {
+    title,
+    dueAt,
+    priority,
+    categoryId,
+    categoryName,
+    type,
+    contactName,
+    nextAction,
+  };
 }

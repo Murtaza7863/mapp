@@ -7,6 +7,7 @@ import {
 } from "date-fns";
 import type { Category, CompletionLog, Item } from "../types";
 import { isDueToday, isOverdue } from "./dates";
+import { countNeedsChase } from "./pipeline";
 
 export interface TodaySummary {
   overdue: number;
@@ -14,6 +15,8 @@ export interface TodaySummary {
   routines: number;
   /** All open follow-up threads */
   openThreads: number;
+  /** Threads that need a nudge right now */
+  needsNudge: number;
   snoozed: number;
   priority: number;
   byCategory: { category: Category; count: number }[];
@@ -63,6 +66,7 @@ export function computeTodaySummary(
     dueToday,
     routines,
     openThreads: followUps,
+    needsNudge: countNeedsChase(items),
     snoozed,
     priority,
     byCategory,

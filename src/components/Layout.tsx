@@ -25,7 +25,7 @@ import {
   buildEventDeadlineEntries,
   deadlineUrgency,
 } from "../lib/event-deadlines";
-import { filterStaleThreads } from "../lib/pipeline";
+import { countNeedsChase } from "../lib/pipeline";
 
 const mainLinks = [
   { to: "/", label: "Home", Icon: SunIcon },
@@ -58,13 +58,7 @@ export function Layout() {
   const navigate = useNavigate();
   const { items } = useItems();
 
-  const staleThreadCount = useMemo(
-    () =>
-      filterStaleThreads(
-        items.filter((i) => i.type === "follow-up" && i.status !== "done"),
-      ).length,
-    [items],
-  );
+  const nudgeCount = useMemo(() => countNeedsChase(items), [items]);
 
   const urgentPrepCount = useMemo(
     () =>
@@ -77,7 +71,7 @@ export function Layout() {
   const moreBadgeCount = urgentPrepCount;
 
   const badgeFor = (key?: "threads" | "prep") => {
-    if (key === "threads") return staleThreadCount;
+    if (key === "threads") return nudgeCount;
     if (key === "prep") return urgentPrepCount;
     return 0;
   };

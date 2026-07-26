@@ -6,9 +6,11 @@ import type { FeedEntry, FeedFocus } from "../lib/feed";
 import type { Item } from "../types";
 
 import { EventDeadlinesSection } from "../components/EventDeadlinesSection";
+import { DailyBriefingCard } from "../components/DailyBriefingCard";
 import { StarIcon } from "../components/icons";
 import { ItemForm, SnoozeSheet } from "../components/ItemForm";
 import { LoadingView } from "../components/LoadingView";
+import { NudgeQueue } from "../components/NudgeQueue";
 import { PlotBar } from "../components/PlotBar";
 import { QuickAddBar } from "../components/QuickAddBar";
 import { SwipeItem } from "../components/SwipeItem";
@@ -25,6 +27,7 @@ import { useItems } from "../hooks/useItems";
 import { useToast } from "../hooks/useToast";
 import { useUndo } from "../hooks/useUndo";
 import { applyProposals } from "../lib/brain-dump/apply-proposals";
+import { computeDailyBriefing } from "../lib/briefing";
 import { buildEventDeadlineEntries } from "../lib/event-deadlines";
 import {
   buildCommandFeed,
@@ -34,7 +37,7 @@ import {
   groupFeedByArea,
   groupFeedByBucket,
 } from "../lib/feed";
-import { filterStaleThreads } from "../lib/pipeline";
+import { buildSuggestions } from "../lib/pipeline";
 import { setLastCategoryId } from "../lib/preferences";
 import { computeTodaySummary } from "../lib/stats";
 
@@ -75,24 +78,20 @@ export function TodayView() {
     () => computeTodaySummary(items, categories),
     [items, categories],
   );
+  const briefing = useMemo(() => computeDailyBriefing(items), [items]);
+  const suggestions = useMemo(() => buildSuggestions(items), [items]);
   const fullFeed = useMemo(() => buildCommandFeed(items), [items]);
   const feed = useMemo(() => {
     const byFocus = filterFeedByFocus(fullFeed, feedFocus);
     return filterFeedByCategory(byFocus, areaFilter);
   }, [fullFeed, feedFocus, areaFilter]);
 
-  const staleThreads = useMemo(
-    () =>
-      filterStaleThreads(
-        items.filter((i) => i.type === "follow-up" && i.status !== "done"),
-      ),
-    [items],
-  );
-
-  const hasThreadsInFeed = useMemo(
-    () => feed.some((e) => e.item.type === "follow-up"),
+  const hasNudgesInFeed = useMemo(
+    () => feed.some((e) => e.bucket === "chase"),
     [feed],
   );
+
+  const chaseMode = feedFocus === "chase";
 
   const byArea = useMemo(
     () =>
@@ -103,6 +102,11 @@ export function TodayView() {
   const byBucket = useMemo(() => groupFeedByBucket(feed), [feed]);
 
   const deepLinkId = searchParams.get("item");
+  const focusParam = searchParams.get("focus");
+
+  useEffect(() => {
+    if (focusParam === "chase") setFeedFocus("chase");
+  }, [focusParam]);
 
   useEffect(() => {
     if (!deepLinkId) return;
@@ -235,6 +239,12 @@ export function TodayView() {
         }
       />
 
+      <DailyBriefingCard
+        briefing={briefing}
+        onFocusNudge={() => setFeedFocus("chase")}
+        onFocusOverdue={() => setFeedFocus("overdue")}
+      />
+
       <TodayStats
         summary={summary}
         focus={feedFocus}
@@ -243,14 +253,32 @@ export function TodayView() {
         onAreaFilterChange={setAreaFilter}
       />
 
-      {staleThreads.length > 0 && !hasThreadsInFeed && (
-        <Link to="/follow-ups?stale=1" className="home-threads-banner">
+      {summary.needsNudge > 0 && !hasNudgesInFeed && !chaseMode && (
+        <button
+          type="button"
+          onClick={() => setFeedFocus("chase")}
+          className="home-threads-banner w-full text-left"
+        >
           <span>
-            {staleThreads.length} thread{staleThreads.length === 1 ? "" : "s"}{" "}
-            need a nudge
+            {summary.needsNudge} thread{summary.needsNudge === 1 ? "" : "s"} need
+            a nudge
           </span>
-          <span className="home-threads-banner-cta">Open threads →</span>
-        </Link>
+          <span className="home-threads-banner-cta">Work nudges →</span>
+        </button>
+      )}
+
+      {!chaseMode && suggestions.length > 0 && (
+        <NudgeQueue
+          suggestions={suggestions}
+          items={items}
+          onSelect={(id) => {
+            const item = items.find((i) => i.id === id);
+            if (item) setEditItem(item);
+          }}
+          onUpdate={(id, changes) => {
+            void updateItem(id, changes).catch(actionError);
+          }}
+        />
       )}
 
       <QuickAddBar
@@ -329,6 +357,32 @@ export function TodayView() {
           title="Nothing in this focus"
           description="Tap All active or clear summary filters"
         />
+      ) : chaseMode ? (
+        <div className="page-block">
+          <SectionHeader
+            title="Nudge session"
+            count={feed.length}
+            action={
+              <button
+                type="button"
+                onClick={() => setFeedFocus(null)}
+                className="text-zinc-500 text-[11px] font-medium"
+              >
+                Exit
+              </button>
+            }
+          />
+          {feed.length === 0 ? (
+            <EmptyState
+              title="No nudges right now"
+              description="Threads will resurface here when they need follow-through"
+            />
+          ) : (
+            <div className="item-list">
+              {feed.map((entry) => renderEntry(entry))}
+            </div>
+          )}
+        </div>
       ) : viewMode === "feed" ? (
         <div className="page-block">
           {[...byBucket.entries()].map(([bucket, entries]) => {

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 import type { Item, PipelineStage } from "../types";
 
@@ -20,6 +20,7 @@ import { useUndo } from "../hooks/useUndo";
 import {
   filterStaleThreads,
   groupFollowUpsByStage,
+  needsChase,
 } from "../lib/pipeline";
 import { PIPELINE_STAGE_LABELS } from "../types";
 
@@ -51,6 +52,7 @@ export function FollowUpsView() {
   const [snoozeItem, setSnoozeItem] = useState<Item | null>(null);
   const [areaFilter, setAreaFilter] = useState<string>("all");
   const [staleOnly, setStaleOnly] = useState(false);
+  const [nudgeOnly, setNudgeOnly] = useState(false);
 
   const threads = useMemo(() => {
     let list = items.filter(
@@ -60,8 +62,9 @@ export function FollowUpsView() {
       list = list.filter((i) => i.categoryId === areaFilter);
     }
     if (staleOnly) list = filterStaleThreads(list);
+    if (nudgeOnly) list = list.filter((i) => needsChase(i));
     return list;
-  }, [items, areaFilter, staleOnly]);
+  }, [items, areaFilter, staleOnly, nudgeOnly]);
 
   const byStage = useMemo(() => {
     const map = groupFollowUpsByStage(threads);
@@ -69,6 +72,13 @@ export function FollowUpsView() {
   }, [threads]);
 
   const total = threads.length;
+  const nudgeCount = useMemo(
+    () =>
+      items.filter(
+        (i) => i.type === "follow-up" && i.status !== "done" && needsChase(i),
+      ).length,
+    [items],
+  );
   const staleCount = useMemo(
     () =>
       filterStaleThreads(
@@ -87,6 +97,7 @@ export function FollowUpsView() {
 
   useEffect(() => {
     if (searchParams.get("stale") === "1") setStaleOnly(true);
+    if (searchParams.get("nudge") === "1") setNudgeOnly(true);
   }, [searchParams]);
 
   const renderList = (list: Item[]) => (
@@ -117,13 +128,23 @@ export function FollowUpsView() {
         title="Threads"
         subtitle="Outreach, waiting, revisit later"
         action={
-          <button
-            type="button"
-            onClick={() => setShowForm(true)}
-            className="btn-primary min-h-[44px] rounded-lg px-4 py-2 text-sm"
-          >
-            + Add
-          </button>
+          <div className="flex shrink-0 gap-2">
+            {nudgeCount > 0 && (
+              <Link
+                to="/?focus=chase"
+                className="border-violet-500/30 text-violet-300 min-h-[44px] rounded-lg border px-3 py-2 text-sm"
+              >
+                Nudge ({nudgeCount})
+              </Link>
+            )}
+            <button
+              type="button"
+              onClick={() => setShowForm(true)}
+              className="btn-primary min-h-[44px] rounded-lg px-4 py-2 text-sm"
+            >
+              + Add
+            </button>
+          </div>
         }
       />
 
@@ -149,10 +170,22 @@ export function FollowUpsView() {
       </div>
 
       <div className="mb-4 flex flex-wrap gap-2">
-        <FilterPill active={!staleOnly} onClick={() => setStaleOnly(false)}>
+        <FilterPill active={!staleOnly && !nudgeOnly} onClick={() => {
+          setStaleOnly(false);
+          setNudgeOnly(false);
+        }}>
           All threads
         </FilterPill>
-        <FilterPill active={staleOnly} onClick={() => setStaleOnly(true)}>
+        <FilterPill active={nudgeOnly} onClick={() => {
+          setNudgeOnly(true);
+          setStaleOnly(false);
+        }}>
+          Need nudge ({nudgeCount})
+        </FilterPill>
+        <FilterPill active={staleOnly} onClick={() => {
+          setStaleOnly(true);
+          setNudgeOnly(false);
+        }}>
           Stale ({staleCount})
         </FilterPill>
       </div>

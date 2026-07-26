@@ -2,6 +2,7 @@ import { db } from "../db";
 import { getSettings } from "../db";
 import type { Item } from "../types";
 import { getNotificationFireTime } from "./dates";
+import { chaseReason, needsChase } from "./pipeline";
 import { canUseWebPush, pushBlockReason } from "./pwa";
 
 const API_BASE = import.meta.env.VITE_PUSH_API_URL ?? "";
@@ -62,6 +63,17 @@ export function buildScheduledNotifications(
           url: `/follow-ups?item=${item.id}`,
         });
       }
+    }
+
+    if (item.type === "follow-up" && needsChase(item, new Date(now))) {
+      const fireAt = nextChaseNudgeTime(now);
+      scheduled.push({
+        id: `${item.id}-chase`,
+        fireAt,
+        title: `Nudge: ${item.contactName ?? item.title}`,
+        body: chaseReason(item, new Date(now)),
+        url: `/follow-ups?item=${item.id}`,
+      });
     }
   }
 
@@ -207,4 +219,12 @@ function notificationBody(item: Item): string {
   if (item.waitingOn) return `Waiting on: ${item.waitingOn}`;
   if (item.notes) return item.notes.slice(0, 120);
   return "Open mApp";
+}
+
+/** Next local 9am — used for chase nudge reminders. */
+function nextChaseNudgeTime(nowMs: number): string {
+  const d = new Date(nowMs);
+  d.setHours(9, 0, 0, 0);
+  if (d.getTime() <= nowMs) d.setDate(d.getDate() + 1);
+  return d.toISOString();
 }

@@ -137,3 +137,11 @@ export function isStaleThread(item: Item, now = new Date()): boolean {
 export function filterStaleThreads(items: Item[]): Item[] {
   return items.filter((item) => isStaleThread(item));
 }
+
+export function countNeedsChase(items: Item[], now = new Date()): number {
+  let count = 0;
+  for (const item of items) {
+    if (needsChase(item, now)) count++;
+  }
+  return count;
+}
