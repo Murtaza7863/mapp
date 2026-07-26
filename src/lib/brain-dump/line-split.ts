@@ -3,7 +3,7 @@ import type { Category } from "../../types";
 import { matchFeatureIntent } from "./features";
 import { looksLikeTaskSegment } from "./title-cleanup";
 
-/** Split `;` chunks and `feature and task` compounds inside one line. */
+/** Split `;` chunks, `task and task`, and `feature and task` compounds. */
 export function expandLineSegments(
   line: string,
   categories: Category[],
@@ -17,13 +17,12 @@ export function expandLineSegments(
 
   const out: string[] = [];
   for (const part of parts) {
-    const andSplit = trySplitFeatureAndTask(part, categories);
-    out.push(...andSplit);
+    out.push(...trySplitAndSegments(part, categories));
   }
   return out;
 }
 
-function trySplitFeatureAndTask(
+function trySplitAndSegments(
   part: string,
   categories: Category[],
 ): string[] {
@@ -34,13 +33,13 @@ function trySplitFeatureAndTask(
   const right = andMatch[2].trim();
   const leftIsFeature = Boolean(matchFeatureIntent(left, categories));
   const rightIsFeature = Boolean(matchFeatureIntent(right, categories));
+  const leftIsTask = looksLikeTaskSegment(left);
   const rightIsTask = looksLikeTaskSegment(right);
 
   if (leftIsFeature && rightIsTask && !rightIsFeature) {
     return [left, right];
   }
 
-  // “create folder smubia and add visa checklist” — feature left, task right
   if (
     /\bfolder\b/i.test(left) &&
     /^(?:add|put|include|create)\b/i.test(right) &&
@@ -53,6 +52,17 @@ function trySplitFeatureAndTask(
       const task = right.replace(/^(?:add|put|include|create)\s+/i, "").trim();
       return [normalizedLeft, task];
     }
+  }
+
+  // Two separate tasks: “call mom and buy milk tomorrow”
+  if (
+    !leftIsFeature &&
+    !rightIsFeature &&
+    leftIsTask &&
+    rightIsTask &&
+    !matchFeatureIntent(part, categories)
+  ) {
+    return [left, right];
   }
 
   return [part];

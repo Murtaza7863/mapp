@@ -1,7 +1,7 @@
 import type { ItemType } from "../../types";
 
 const FILLER_PREFIX =
-  /^(?:need to|remember to|remind me to|have to|gotta|should|don't forget to|also|maybe|probably)\s+/i;
+  /^(?:need to|remember to|remind me to|don't forget(?:\s+to)?|dont forget(?:\s+to)?|have to|gotta|should|also|maybe|probably)\s+/i;
 
 const STRAY_DATE_TOKENS =
   /\b(?:tomorrow|today|tonight|tmrw|tmr|next week|next monday|next tuesday|next wednesday|next thursday|next friday|next saturday|next sunday)\b/gi;
@@ -155,6 +155,10 @@ export function isValidTask(
 
   if (JUNK_LINE_RE.test(line.trim())) return false;
   if (/^(if|when|unless|although|because)\b/i.test(t)) return false;
+
+  if (ctx.type === "note" || ctx.type === "follow-up") {
+    return t.length >= 2;
+  }
 
   const words = t.split(/\s+/).filter(Boolean);
 

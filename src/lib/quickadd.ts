@@ -38,7 +38,7 @@ export function parseQuickAdd(
   let type: ItemType | undefined;
 
   const typeMatch = raw.match(
-    /^(follow[- ]?up|fu|routine|note|deadline|task|project):\s*/i,
+    /^(follow[- ]?up|fu|routine|note|deadline|task|todo|project):\s*/i,
   );
   if (typeMatch) {
     const token = typeMatch[1].toLowerCase();
@@ -62,6 +62,15 @@ export function parseQuickAdd(
   if (/\s!{1,2}(?=\s|$)/.test(text)) {
     priority = true;
     text = text.replace(/\s!{1,2}(?=\s|$)/g, " ");
+  }
+
+  if (
+    /^(?:urgent|asap)\s*:?\s*/i.test(raw) ||
+    /\s(?:urgent|asap)(?=\s|$)/i.test(text)
+  ) {
+    priority = true;
+    raw = raw.replace(/^(?:urgent|asap)\s*:?\s*/i, "");
+    text = ` ${raw} `.replace(/\s(?:urgent|asap)(?=\s|$)/gi, " ");
   }
 
   const catMatch = text.match(/\s#([\w-]+)/);
@@ -96,6 +105,21 @@ export function parseQuickAdd(
     dayOffset = 1;
     explicitDate = true;
     text = text.replace(/\s(tomorrow|tmrw|tmr)(?=\s|$)/gi, " ");
+  } else if (/\s(eod|end of day)(?=\s|$)/i.test(text)) {
+    dayOffset = 0;
+    explicitDate = true;
+    hour = 17;
+    text = text.replace(/\s(eod|end of day)(?=\s|$)/gi, " ");
+  } else if (/\sin\s+(\d+)\s+days?(?=\s|$)/i.test(text)) {
+    const m = text.match(/\sin\s+(\d+)\s+days?(?=\s|$)/i)!;
+    dayOffset = parseInt(m[1], 10);
+    explicitDate = true;
+    text = text.replace(m[0], " ");
+  } else if (/\sin\s+(\d+)\s+weeks?(?=\s|$)/i.test(text)) {
+    const m = text.match(/\sin\s+(\d+)\s+weeks?(?=\s|$)/i)!;
+    dayOffset = parseInt(m[1], 10) * 7;
+    explicitDate = true;
+    text = text.replace(m[0], " ");
   } else if (/\stonight(?=\s|$)/i.test(text)) {
     dayOffset = 0;
     explicitDate = true;
@@ -109,6 +133,34 @@ export function parseQuickAdd(
     dayOffset = 7;
     explicitDate = true;
     text = text.replace(/\snext week(?=\s|$)/gi, " ");
+  } else if (/\snext\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun)(?=\s|$|[.,!?])/i.test(text)) {
+    const m = text.match(
+      /\snext\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun)(?=\s|$|[.,!?])/i,
+    )!;
+    const token = m[1].toLowerCase();
+    const idx = WEEKDAYS.findIndex((d) => d.startsWith(token.slice(0, 3)));
+    const abbrIdx = WEEKDAY_ABBR.indexOf(token.slice(0, 3));
+    const dayIndex = idx >= 0 ? idx : abbrIdx;
+    if (dayIndex >= 0) {
+      dayOffset = (dayIndex - now.getDay() + 7) % 7 || 7;
+      explicitDate = true;
+      text = text.replace(m[0], " ");
+    }
+  } else if (/\sthis\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun)(?=\s|$|[.,!?])/i.test(text)) {
+    const m = text.match(
+      /\sthis\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun)(?=\s|$|[.,!?])/i,
+    )!;
+    const token = m[1].toLowerCase();
+    const idx = WEEKDAYS.findIndex((d) => d.startsWith(token.slice(0, 3)));
+    const abbrIdx = WEEKDAY_ABBR.indexOf(token.slice(0, 3));
+    const dayIndex = idx >= 0 ? idx : abbrIdx;
+    if (dayIndex >= 0) {
+      let offset = (dayIndex - now.getDay() + 7) % 7;
+      if (offset === 0) offset = 0; // today if same weekday
+      dayOffset = offset;
+      explicitDate = true;
+      text = text.replace(m[0], " ");
+    }
   } else {
     const dueByDay = text.match(
       /\s(?:due|by)\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun)(?=\s|$|[.,!?])/i,

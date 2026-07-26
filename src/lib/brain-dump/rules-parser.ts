@@ -25,7 +25,7 @@ import { resolveCategoryId } from "./validate";
 const FOLLOW_UP_RE =
   /\b(follow[- ]?up|reach out|email|call|text|bump|waiting on|check in with)\b/i;
 const ROUTINE_RE =
-  /\b(routine|every day|daily|weekly|gym|habit|each morning|each evening)\b/i;
+  /\b(routine|every day|every\s+(?:mon|tue|wed|thu|fri|sat|sun|monday|tuesday|wednesday|thursday|friday|saturday|sunday)|daily|weekly|gym|habit|each morning|each evening)\b/i;
 const NOTE_RE = /^note:\s*/i;
 const JOT_NOTE_RE = /^(?:jot down|write down|capture)\s*:\s*/i;
 const PROJECT_RE = /^project:\s*/i;
@@ -93,11 +93,14 @@ export function splitDumpLines(text: string): string[] {
 
   const chunks = normalized
     .split(/\n+/)
-    .flatMap((chunk) =>
-      chunk.includes(";")
-        ? chunk.split(/\s*;\s*/).map(cleanListLine).filter(Boolean)
-        : [cleanListLine(chunk)],
-    )
+    .flatMap((chunk) => {
+      const pieces = chunk.includes(";")
+        ? chunk.split(/\s*;\s*/)
+        : chunk.includes("|")
+          ? chunk.split(/\s*\|\s*/)
+          : [chunk];
+      return pieces.map(cleanListLine).filter(Boolean);
+    })
     .filter(Boolean);
 
   return chunks.length > 0 ? chunks : [normalized].filter(Boolean);
@@ -106,7 +109,7 @@ export function splitDumpLines(text: string): string[] {
 export function inferTypeFromLine(line: string): ItemType {
   if (NOTE_RE.test(line) || JOT_NOTE_RE.test(line)) return "note";
   if (PROJECT_RE.test(line)) return "project";
-  if (FOLLOW_UP_RE.test(line)) return "follow-up";
+  if (/^fu:\s*/i.test(line) || FOLLOW_UP_RE.test(line)) return "follow-up";
   if (ROUTINE_RE.test(line)) return "routine";
   return "deadline";
 }
@@ -116,7 +119,7 @@ export function stripTypePrefix(line: string): string {
     .replace(NOTE_RE, "")
     .replace(JOT_NOTE_RE, "")
     .replace(PROJECT_RE, "")
-    .replace(/^(follow[- ]?up|fu|deadline|task|routine):\s*/i, "")
+    .replace(/^(follow[- ]?up|fu|deadline|task|todo|routine):\s*/i, "")
     .trim();
 }
 
@@ -155,10 +158,15 @@ function lineToProposal(
   const workingLine = folderTask?.taskTitle ?? areaStripped.text;
 
   const cleaned = stripTypePrefix(workingLine);
-  const hasExplicitType = /^(?:note|follow[- ]?up|fu|deadline|task|routine|project|jot down|write down|capture):/i.test(
+  const hasExplicitType = /^(?:note|follow[- ]?up|fu|deadline|task|todo|routine|project|jot down|write down|capture):/i.test(
     workingLine,
   );
-  if (!cleaned || (!looksLikeTaskSegment(cleaned) && !hasExplicitType)) {
+  if (
+    !cleaned ||
+    (!folderTask &&
+      !looksLikeTaskSegment(cleaned) &&
+      !hasExplicitType)
+  ) {
     return null;
   }
 

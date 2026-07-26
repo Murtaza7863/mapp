@@ -303,6 +303,73 @@ visa appointment friday`,
     actions: 1,
     actionTitles: ["Visa"],
   },
+  {
+    name: "task and task split",
+    dump: "call mom and buy milk tomorrow",
+    items: 2,
+    itemTitles: [/mom/i, /milk/i],
+  },
+  {
+    name: "relative in days",
+    dump: "in 3 days renew passport",
+    items: 1,
+    itemTitles: [/passport/i],
+  },
+  {
+    name: "FU shorthand",
+    dump: "FU: google recruiter",
+    items: 1,
+    itemTypes: ["follow-up"],
+  },
+  {
+    name: "every monday routine",
+    dump: "every monday team sync",
+    items: 1,
+    itemTypes: ["routine"],
+  },
+  {
+    name: "put task in named folder",
+    dump: "put visa checklist in smubia folder",
+    items: 1,
+    parentFolders: ["smubia"],
+  },
+  {
+    name: "urgent keyword priority",
+    dump: "urgent fix production bug",
+    items: 1,
+  },
+  {
+    name: "pipe separated list",
+    dump: "email prof | gym friday | pay rent",
+    items: 3,
+  },
+  {
+    name: "eod deadline",
+    dump: "eod send team update",
+    items: 1,
+  },
+  {
+    name: "todo prefix",
+    dump: "todo: pack for trip",
+    items: 1,
+  },
+  {
+    name: "next monday date",
+    dump: "next monday standup prep",
+    items: 1,
+  },
+  {
+    name: "this friday date",
+    dump: "this friday submit report",
+    items: 1,
+  },
+  {
+    name: "add area shorthand",
+    dump: "add area Freelance",
+    actions: 1,
+    actionKinds: ["create_area"],
+    actionTitles: ["Freelance"],
+  },
 ];
 
 describe("Plot scenario matrix", () => {

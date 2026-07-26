@@ -89,7 +89,7 @@ export function PlotBar({ categories, onParsed }: Props) {
                 setExpanded(false);
             }}
             onKeyDown={onKeyDown}
-            placeholder="Plot anything…"
+            placeholder="Plot tasks, folders, threads…"
             className="compose-bar-input"
             aria-label="Plot tasks"
           />
