@@ -4,17 +4,8 @@ import { Link, useLocation } from "react-router-dom";
 
 import type { Category, Item } from "../types";
 
-import { CategoryIcon } from "../components/CategoryIcon";
 import { ContainerCard, containerProgress } from "../components/ContainerCard";
-import { IconPicker } from "../components/IconPicker";
-import {
-  DotsIcon,
-  FolderIcon,
-  GridIcon,
-  PlusIcon,
-  resolveCategoryIconKey,
-  type CategoryIconKey,
-} from "../components/icons";
+import { DotsIcon, FolderIcon, GridIcon, PlusIcon } from "../components/icons";
 import { ItemForm, SnoozeSheet } from "../components/ItemForm";
 import { SubgroupQuickAddHelp } from "../components/SubgroupQuickAddHelp";
 import { SwipeItem } from "../components/SwipeItem";
@@ -199,7 +190,6 @@ export function CategoryView() {
             id: "all",
             name: "All",
             color: "#64748b",
-            icon: "grid",
           }}
           active={selectedId === "all"}
           onClick={() => setSelectedId("all")}
@@ -290,18 +280,9 @@ export function CategoryView() {
                       subgroups: parseSubgroups(e.target.value),
                     })
                   }
-                  placeholder="Subgroups: Homework, Exam (comma separated)"
+                  placeholder="Subgroups: Tasks, Projects (comma separated)"
                   className="input-field w-full rounded-xl px-3 py-2 text-xs"
                 />
-                <div>
-                  <p className="text-zinc-500 mb-1.5 text-[10px]">Icon</p>
-                  <IconPicker
-                    value={resolveCategoryIconKey(cat.icon)}
-                    onChange={(icon: CategoryIconKey) =>
-                      updateCategory(cat.id, { icon })
-                    }
-                  />
-                </div>
                 <div className="flex gap-2">
                   <button
                     type="button"
@@ -387,7 +368,7 @@ export function CategoryView() {
                   className="flex items-center gap-2 text-sm font-semibold transition hover:opacity-80"
                   style={{ color: cat.color }}
                 >
-                  <CategoryIcon category={cat} className="h-4 w-4" />
+                  <AreaDot color={cat.color} />
                   {cat.name}
                   <span className="text-zinc-600 text-[11px] font-normal">
                     tap to open
@@ -506,7 +487,7 @@ function CategoryChip({
   active,
   onClick,
 }: {
-  category: Pick<Category, "id" | "name" | "color" | "icon">;
+  category: Pick<Category, "id" | "name" | "color">;
   active: boolean;
   onClick: () => void;
 }) {
@@ -527,10 +508,20 @@ function CategoryChip({
       {isAll ? (
         <GridIcon className="h-3.5 w-3.5" style={{ color: category.color }} />
       ) : (
-        <CategoryIcon category={category} className="h-3.5 w-3.5" />
+        <AreaDot color={category.color} />
       )}
       {category.name}
     </button>
+  );
+}
+
+function AreaDot({ color }: { color: string }) {
+  return (
+    <span
+      className="h-2.5 w-2.5 shrink-0 rounded-full"
+      style={{ backgroundColor: color }}
+      aria-hidden
+    />
   );
 }
 

@@ -1,7 +1,7 @@
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import { db, seedDatabase } from "../db";
-import { logCompletion } from "./completions";
+import { createCompletionLog } from "./completions";
 import { exportData, importData } from "./export";
 import { createItem } from "./items";
 
@@ -30,7 +30,9 @@ describe("export/import", () => {
       dueAt: new Date().toISOString(),
     });
     await db.items.add(item);
-    await logCompletion(item, new Date().toISOString());
+    await db.completions.add(
+      createCompletionLog(item, new Date().toISOString()),
+    );
 
     const bundle = await exportData();
     expect(bundle.version).toBe(2);

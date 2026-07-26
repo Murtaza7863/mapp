@@ -1,11 +1,4 @@
-import {
-  addDays,
-  format,
-  nextMonday,
-  parseISO,
-  setHours,
-  setMinutes,
-} from "date-fns";
+import { addDays, format, nextMonday, setHours, setMinutes } from "date-fns";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useMemo, useState } from "react";
 
@@ -21,7 +14,6 @@ import { db } from "../db";
 import { defaultRecurrence } from "../lib/items";
 import { gpdDueFromEvent } from "../lib/pipeline";
 import { getLastCategoryId } from "../lib/preferences";
-import { parseQuickAdd, type ParsedQuickAdd } from "../lib/quickadd";
 import {
   REMINDER_OFFSET_OPTIONS,
   ITEM_TYPE_LABELS,
@@ -540,91 +532,6 @@ export function ItemForm({
           </form>
         </div>
       </div>
-    </div>
-  );
-}
-
-interface QuickAddProps {
-  categories: Category[];
-  onAdd: (parsed: ParsedQuickAdd) => void;
-  onExpand: () => void;
-}
-
-export function QuickAdd({ categories, onAdd, onExpand }: QuickAddProps) {
-  const [value, setValue] = useState("");
-
-  const parsed = useMemo(
-    () => (value.trim() ? parseQuickAdd(value, categories) : null),
-    [value, categories],
-  );
-
-  const canSubmit = Boolean(value.trim());
-
-  const submit = () => {
-    if (!canSubmit) return;
-    const parsedNow = parseQuickAdd(value, categories);
-    if (!parsedNow.title) return;
-    onAdd(parsedNow);
-    setValue("");
-  };
-
-  const hasHints =
-    parsed &&
-    (parsed.dueAt || parsed.categoryName || parsed.priority || parsed.type);
-
-  return (
-    <div>
-      <div className="glass-card flex gap-2 rounded-xl p-1.5">
-        <input
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && submit()}
-          placeholder="Add a task…"
-          className="input-field min-w-0 flex-1 rounded-lg border-0 bg-transparent px-3 py-2.5"
-        />
-        <button
-          type="button"
-          onClick={submit}
-          disabled={!canSubmit}
-          className="btn-primary shrink-0 rounded-lg px-4 py-2.5 text-sm disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          Add
-        </button>
-        <button
-          type="button"
-          onClick={onExpand}
-          className="btn-ghost text-zinc-500 shrink-0 rounded-lg px-3 py-2.5 text-sm"
-          title="Full form"
-        >
-          ···
-        </button>
-      </div>
-      {hasHints && (
-        <div className="text-zinc-600 mt-2 flex flex-wrap items-center gap-1.5 px-0.5 text-[11px]">
-          <span>{parsed.title}</span>
-          {parsed.dueAt && (
-            <span className="bg-sky-400/10 text-sky-300 rounded-md px-1.5 py-0.5">
-              {format(parseISO(parsed.dueAt), "EEE MMM d, h:mm a")}
-            </span>
-          )}
-          {parsed.categoryName && (
-            <span className="bg-white/5 text-zinc-300 rounded-md px-1.5 py-0.5">
-              #{parsed.categoryName}
-            </span>
-          )}
-          {parsed.priority && (
-            <span className="bg-amber-400/10 text-amber-300 inline-flex items-center gap-1 rounded-md px-1.5 py-0.5">
-              <StarIcon filled className="h-3 w-3" />
-              priority
-            </span>
-          )}
-          {parsed.type && parsed.type !== "deadline" && (
-            <span className="bg-violet-400/10 text-violet-300 rounded-md px-1.5 py-0.5">
-              {parsed.type}
-            </span>
-          )}
-        </div>
-      )}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 
 import {
   CalendarIcon,
@@ -10,6 +10,7 @@ import {
   FolderIcon,
   GridIcon,
   HistoryIcon,
+  MapIcon,
   MountainIcon,
   NoteIcon,
   SearchIcon,
@@ -45,9 +46,12 @@ export function Layout() {
     <div className="app-shell mx-auto flex min-h-dvh max-w-lg flex-col">
       <header className="glass-panel app-header sticky top-0 z-40 px-4 py-3">
         <div className="flex items-center justify-between">
-          <span className="text-zinc-200 text-sm font-semibold tracking-tight">
-            mApp
-          </span>
+          <Link to="/" className="brand-lockup group" aria-label="mApp home">
+            <span className="brand-map-icon">
+              <MapIcon className="h-4 w-4" />
+            </span>
+            <span className="brand-wordmark">mApp</span>
+          </Link>
           <button
             type="button"
             onClick={() => navigate("/search")}

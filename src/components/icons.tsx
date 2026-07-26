@@ -194,19 +194,28 @@ export function PinIcon({ className, style }: IconProps) {
   );
 }
 
-export function InboxIcon({ className, style }: IconProps) {
-  return (
-    <svg {...base} className={className} style={style}>
-      <path d="M4 6h16v12H4z" />
-      <path d="M4 14h5l1 2h4l1-2h5" />
-    </svg>
-  );
-}
-
 export function ArrowRightIcon({ className, style }: IconProps) {
   return (
     <svg {...base} className={className} style={style}>
       <path d="M5 12h14M13 6l6 6-6 6" />
+    </svg>
+  );
+}
+
+export function MapIcon({ className, style }: IconProps) {
+  return (
+    <svg {...base} className={className} style={style}>
+      <path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2V6z" />
+      <path d="M9 4v14M15 6v14" />
+    </svg>
+  );
+}
+
+export function SparkIcon({ className, style }: IconProps) {
+  return (
+    <svg {...base} className={className} style={style}>
+      <path d="M12 3l1.2 4.2L17.5 8 13.2 9.2 12 13.5 10.8 9.2 6.5 8l4.3-.8L12 3z" />
+      <path d="M5 14l.7 2.3L8 17l-2.3.7L5 20l-.7-2.3L2 17l2.3-.7L5 14z" />
     </svg>
   );
 }

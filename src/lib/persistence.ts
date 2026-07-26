@@ -2,12 +2,6 @@ import { db, updateSettings } from "../db";
 import { exportData, importData, type ExportBundle } from "./export";
 import { syncNotificationSchedule } from "./notifications";
 
-export interface DbBackup {
-  id: "latest" | "previous";
-  savedAt: string;
-  data: string;
-}
-
 let backupTimer: ReturnType<typeof setTimeout> | null = null;
 const BACKUP_DEBOUNCE_MS = 15_000;
 

@@ -3,7 +3,6 @@ import {
   addWeeks,
   format,
   isBefore,
-  isSameDay,
   isToday,
   isTomorrow,
   parseISO,
@@ -99,27 +98,6 @@ export function getNextOccurrence(
   }
 
   return addDays(from, 1);
-}
-
-export function groupByDate(items: Item[]): Map<string, Item[]> {
-  const map = new Map<string, Item[]>();
-  for (const item of items) {
-    if (!item.dueAt) continue;
-    const key = format(parseISO(item.dueAt), "yyyy-MM-dd");
-    const list = map.get(key) ?? [];
-    list.push(item);
-    map.set(key, list);
-  }
-  return map;
-}
-
-export function sameDayKey(iso: string): string {
-  return format(parseISO(iso), "yyyy-MM-dd");
-}
-
-export function isSameDayISO(a?: string, b?: string): boolean {
-  if (!a || !b) return false;
-  return isSameDay(parseISO(a), parseISO(b));
 }
 
 export function startOfMonthGrid(date: Date): Date[] {

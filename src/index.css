@@ -296,6 +296,178 @@ body {
   }
 }
 
+.agent-panel {
+  border-radius: 1rem;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 122, 89, 0.35),
+    rgba(56, 189, 248, 0.2),
+    rgba(255, 255, 255, 0.06)
+  );
+}
+
+.agent-panel-inner {
+  border-radius: calc(1rem - 1px);
+  background: rgba(17, 18, 24, 0.96);
+  padding: 0.9rem 1rem 1rem;
+}
+
+.agent-textarea {
+  min-height: 7.5rem;
+}
+
+.agent-textarea::placeholder {
+  color: #52525b;
+}
+
+.brand-lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  transition: opacity 0.15s ease;
+}
+
+.brand-lockup:active {
+  opacity: 0.75;
+}
+
+.brand-map-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.5rem;
+  background: linear-gradient(
+    145deg,
+    rgba(255, 122, 89, 0.18),
+    rgba(255, 122, 89, 0.06)
+  );
+  border: 1px solid rgba(255, 122, 89, 0.22);
+  color: #ff9a7a;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.brand-lockup:hover .brand-map-icon {
+  border-color: rgba(255, 122, 89, 0.4);
+  background: linear-gradient(
+    145deg,
+    rgba(255, 122, 89, 0.24),
+    rgba(255, 122, 89, 0.1)
+  );
+}
+
+.brand-wordmark {
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #e4e4e7;
+}
+
+.compose-bar-wrap {
+  position: relative;
+}
+
+.compose-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.625rem 0.75rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    border-radius 0.15s ease;
+}
+
+.compose-bar:focus-within {
+  border-color: rgba(255, 122, 89, 0.35);
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.compose-bar-expanded {
+  border-radius: 1.25rem;
+  align-items: flex-start;
+  padding-top: 0.75rem;
+}
+
+.compose-bar-busy {
+  opacity: 0.85;
+}
+
+.compose-bar-icon {
+  color: #71717a;
+  margin-top: 0.125rem;
+}
+
+.compose-bar-input {
+  flex: 1;
+  min-width: 0;
+  resize: none;
+  border: 0;
+  background: transparent;
+  color: #e4e4e7;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  outline: none;
+}
+
+.compose-bar-input::placeholder {
+  color: #52525b;
+}
+
+.compose-bar-go {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  background: rgba(255, 122, 89, 0.15);
+  border: 1px solid rgba(255, 122, 89, 0.25);
+  color: #ff9a7a;
+  transition:
+    background 0.12s ease,
+    opacity 0.12s ease;
+}
+
+.compose-bar-go:disabled {
+  opacity: 0.35;
+}
+
+.compose-bar-go:not(:disabled):active {
+  background: rgba(255, 122, 89, 0.28);
+}
+
+.compose-bar-spinner {
+  width: 0.875rem;
+  height: 0.875rem;
+  border: 2px solid rgba(255, 122, 89, 0.25);
+  border-top-color: #ff9a7a;
+  border-radius: 9999px;
+  animation: compose-spin 0.7s linear infinite;
+}
+
+.compose-bar-error {
+  margin-top: 0.375rem;
+  padding-left: 0.75rem;
+  font-size: 0.6875rem;
+  color: rgba(248, 113, 113, 0.9);
+}
+
+@keyframes compose-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 ::-webkit-scrollbar {
   width: 0;
   height: 0;

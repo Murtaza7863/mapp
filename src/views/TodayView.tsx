@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
-import type { ParsedQuickAdd } from "../lib/quickadd";
+import type { ParseDumpResult } from "../lib/brain-dump/types";
 import type { Item } from "../types";
 
 import { EventDeadlinesSection } from "../components/EventDeadlinesSection";
 import { StarIcon } from "../components/icons";
-import { QuickAdd, ItemForm, SnoozeSheet } from "../components/ItemForm";
+import { ItemForm, SnoozeSheet } from "../components/ItemForm";
 import { LoadingView } from "../components/LoadingView";
+import { PlotBar } from "../components/PlotBar";
 import { SuggestionStrip } from "../components/SuggestionStrip";
 import { SwipeItem } from "../components/SwipeItem";
 import { TodayStats } from "../components/TodayStats";
@@ -21,6 +22,7 @@ import { useCategories } from "../hooks/useCategories";
 import { useItems } from "../hooks/useItems";
 import { useToast } from "../hooks/useToast";
 import { useUndo } from "../hooks/useUndo";
+import { applyProposals } from "../lib/brain-dump/apply-proposals";
 import { buildEventDeadlineEntries } from "../lib/event-deadlines";
 import {
   buildCommandFeed,
@@ -30,7 +32,6 @@ import {
 } from "../lib/feed";
 import { buildSuggestions } from "../lib/pipeline";
 import { setLastCategoryId } from "../lib/preferences";
-import { applyQuickAdd } from "../lib/quickadd-actions";
 import { computeTodaySummary } from "../lib/stats";
 
 type ViewMode = "feed" | "areas";
@@ -97,26 +98,17 @@ export function TodayView() {
     [items],
   );
 
-  const handleQuickAdd = async (parsed: ParsedQuickAdd) => {
+  const handlePlot = async (result: ParseDumpResult) => {
     try {
-      const created = await applyQuickAdd(parsed, {
-        categories,
-        items,
-        addItem,
-      });
-      if (created.categoryId) setLastCategoryId(created.categoryId);
-      const area = getCategory(created.categoryId)?.name ?? "Home";
-      toast(`Added to ${area}`, {
-        kind: "success",
-        action: {
-          label: "Undo",
-          onClick: () => {
-            void deleteItem(created.id);
-          },
-        },
-      });
+      const created = await applyProposals(result.items, categories, addItem);
+      if (created.length === 0) return;
+      if (created[0]?.categoryId) setLastCategoryId(created[0].categoryId);
+      toast(
+        `Plotted ${created.length} item${created.length === 1 ? "" : "s"}`,
+        { kind: "success" },
+      );
     } catch (err) {
-      toast(err instanceof Error ? err.message : "Could not add item", {
+      toast(err instanceof Error ? err.message : "Could not save items", {
         kind: "error",
       });
     }
@@ -174,11 +166,7 @@ export function TodayView() {
 
       <TodayStats summary={summary} />
 
-      <QuickAdd
-        categories={categories}
-        onAdd={handleQuickAdd}
-        onExpand={() => setShowForm(true)}
-      />
+      <PlotBar categories={categories} onParsed={handlePlot} />
 
       <SuggestionStrip
         suggestions={suggestions}
@@ -226,7 +214,7 @@ export function TodayView() {
       eventDeadlineCount === 0 ? (
         <EmptyState
           title="Clear"
-          description="Add something above to get started"
+          description="Plot something above to get started"
         />
       ) : viewMode === "feed" ? (
         <div className="page-block">

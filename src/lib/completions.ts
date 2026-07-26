@@ -1,5 +1,4 @@
 import { v4 as uuidv4 } from "uuid";
-import { db } from "../db";
 import type { CompletionLog, Item } from "../types";
 
 export function createCompletionLog(
@@ -15,8 +14,4 @@ export function createCompletionLog(
     completedAt,
     notes: item.notes,
   };
-}
-
-export async function logCompletion(item: Item, completedAt: string) {
-  await db.completions.add(createCompletionLog(item, completedAt));
 }

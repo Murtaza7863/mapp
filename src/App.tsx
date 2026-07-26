@@ -19,7 +19,6 @@ import { HistoryView } from "./views/HistoryView";
 import { InsightsView } from "./views/InsightsView";
 import { NotesView } from "./views/NotesView";
 import { ProjectsView } from "./views/ProjectsView";
-import { SchoolView } from "./views/SchoolView";
 import { SearchView } from "./views/SearchView";
 import { SettingsView } from "./views/SettingsView";
 import { TodayView } from "./views/TodayView";
@@ -42,7 +41,7 @@ function AppRoutes() {
         <Route path="folders/:id" element={<ContainerDetailView />} />
         <Route path="projects" element={<ProjectsView />} />
         <Route path="projects/:id" element={<ContainerDetailView />} />
-        <Route path="school" element={<SchoolView />} />
+        <Route path="school" element={<Navigate to="/categories" replace />} />
         <Route path="school/:id" element={<SchoolFolderRedirect />} />
         <Route path="follow-ups" element={<FollowUpsView />} />
         <Route path="deadlines" element={<EventDeadlinesView />} />

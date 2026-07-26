@@ -59,9 +59,9 @@ export function parseQuickAdd(
   let dayOffset: number | null = null;
   let explicitDate = false;
 
-  if (/\s!{1,2}(?=\s)/.test(text)) {
+  if (/\s!{1,2}(?=\s|$)/.test(text)) {
     priority = true;
-    text = text.replace(/\s!{1,2}(?=\s)/g, " ");
+    text = text.replace(/\s!{1,2}(?=\s|$)/g, " ");
   }
 
   const catMatch = text.match(/\s#([\w-]+)/);
@@ -75,14 +75,16 @@ export function parseQuickAdd(
     text = text.replace(catMatch[0], " ");
   }
 
-  const t12 = text.match(/\s(?:at\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)(?=\s)/i);
+  const t12 = text.match(
+    /\s(?:at\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)(?=\s|$)/i,
+  );
   if (t12) {
     hour =
       (parseInt(t12[1], 10) % 12) + (t12[3].toLowerCase() === "pm" ? 12 : 0);
     minute = t12[2] ? parseInt(t12[2], 10) : 0;
     text = text.replace(t12[0], " ");
   } else {
-    const t24 = text.match(/\s(?:at\s+)?(\d{1,2}):(\d{2})(?=\s)/);
+    const t24 = text.match(/\s(?:at\s+)?(\d{1,2}):(\d{2})(?=\s|$)/);
     if (t24) {
       hour = parseInt(t24[1], 10);
       minute = parseInt(t24[2], 10);
@@ -90,35 +92,50 @@ export function parseQuickAdd(
     }
   }
 
-  if (/\s(tomorrow|tmrw|tmr)(?=\s)/i.test(text)) {
+  if (/\s(tomorrow|tmrw|tmr)(?=\s|$)/i.test(text)) {
     dayOffset = 1;
     explicitDate = true;
-    text = text.replace(/\s(tomorrow|tmrw|tmr)(?=\s)/gi, " ");
-  } else if (/\stonight(?=\s)/i.test(text)) {
+    text = text.replace(/\s(tomorrow|tmrw|tmr)(?=\s|$)/gi, " ");
+  } else if (/\stonight(?=\s|$)/i.test(text)) {
     dayOffset = 0;
     explicitDate = true;
     if (hour === null) hour = 20;
-    text = text.replace(/\stonight(?=\s)/gi, " ");
-  } else if (/\stoday(?=\s)/i.test(text)) {
+    text = text.replace(/\stonight(?=\s|$)/gi, " ");
+  } else if (/\stoday(?=\s|$)/i.test(text)) {
     dayOffset = 0;
     explicitDate = true;
-    text = text.replace(/\stoday(?=\s)/gi, " ");
-  } else if (/\snext week(?=\s)/i.test(text)) {
+    text = text.replace(/\stoday(?=\s|$)/gi, " ");
+  } else if (/\snext week(?=\s|$)/i.test(text)) {
     dayOffset = 7;
     explicitDate = true;
-    text = text.replace(/\snext week(?=\s)/gi, " ");
+    text = text.replace(/\snext week(?=\s|$)/gi, " ");
   } else {
-    for (let i = 0; i < 7; i++) {
-      const re = new RegExp(
-        `\\s(?:on\\s+)?(${WEEKDAYS[i]}|${WEEKDAY_ABBR[i]})(?=\\s)`,
-        "i",
-      );
-      const m = text.match(re);
-      if (m) {
-        dayOffset = (i - now.getDay() + 7) % 7 || 7;
+    const dueByDay = text.match(
+      /\s(?:due|by)\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun)(?=\s|$|[.,!?])/i,
+    );
+    if (dueByDay) {
+      const token = dueByDay[1].toLowerCase();
+      const idx = WEEKDAYS.findIndex((d) => d.startsWith(token.slice(0, 3)));
+      const abbrIdx = WEEKDAY_ABBR.indexOf(token.slice(0, 3));
+      const dayIndex = idx >= 0 ? idx : abbrIdx;
+      if (dayIndex >= 0) {
+        dayOffset = (dayIndex - now.getDay() + 7) % 7 || 7;
         explicitDate = true;
-        text = text.replace(m[0], " ");
-        break;
+        text = text.replace(dueByDay[0], " ");
+      }
+    } else {
+      for (let i = 0; i < 7; i++) {
+        const re = new RegExp(
+          `\\s(?:on\\s+)?(${WEEKDAYS[i]}|${WEEKDAY_ABBR[i]})(?=\\s|$|[.,!?])`,
+          "i",
+        );
+        const m = text.match(re);
+        if (m) {
+          dayOffset = (i - now.getDay() + 7) % 7 || 7;
+          explicitDate = true;
+          text = text.replace(m[0], " ");
+          break;
+        }
       }
     }
   }

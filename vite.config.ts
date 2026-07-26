@@ -4,6 +4,18 @@ import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
+  optimizeDeps: {
+    exclude: ["@mlc-ai/web-llm"],
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes("@mlc-ai/web-llm")) return "webllm";
+        },
+      },
+    },
+  },
   plugins: [
     react(),
     tailwindcss(),
@@ -48,6 +60,7 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+        globIgnores: ["**/webllm*.js"],
         navigateFallback: "/index.html",
         importScripts: ["push-handler.js"],
       },

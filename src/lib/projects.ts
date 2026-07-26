@@ -14,10 +14,6 @@ export function isContainer(item: Item): boolean {
   return item.type === "project";
 }
 
-export function isChildItem(item: Item): boolean {
-  return Boolean(item.parentId);
-}
-
 export function getDoneChildren(items: Item[], parentId: string): Item[] {
   return sortItems(
     items.filter((i) => i.parentId === parentId && i.status === "done"),

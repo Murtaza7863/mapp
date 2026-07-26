@@ -1,8 +1,7 @@
-import { addHours, startOfTomorrow, setHours, setMinutes } from "date-fns";
 import { db } from "../db";
 import { getSettings } from "../db";
 import type { Item } from "../types";
-import { isDueToday, getNotificationFireTime } from "./dates";
+import { getNotificationFireTime } from "./dates";
 import { canUseWebPush, pushBlockReason } from "./pwa";
 
 const API_BASE = import.meta.env.VITE_PUSH_API_URL ?? "";
@@ -208,36 +207,4 @@ function notificationBody(item: Item): string {
   if (item.waitingOn) return `Waiting on: ${item.waitingOn}`;
   if (item.notes) return item.notes.slice(0, 120);
   return "Open mApp";
-}
-
-export function snoozeOptions() {
-  const now = new Date();
-  return [
-    { label: "1 hour", date: addHours(now, 1) },
-    { label: "3 hours", date: addHours(now, 3) },
-    {
-      label: "Tomorrow 9am",
-      date: setMinutes(setHours(startOfTomorrow(), 9), 0),
-    },
-  ];
-}
-
-export function buildDigestBody(items: Item[]): string {
-  const pending = items.filter((i) => i.status === "pending");
-  const overdue = pending.filter(
-    (i) => i.type !== "routine" && i.dueAt && new Date(i.dueAt) < new Date(),
-  );
-  const today = pending.filter(isDueToday);
-  const threads = pending.filter((i) => i.type === "follow-up").length;
-
-  const parts: string[] = [];
-  if (overdue.length > 0) parts.push(`${overdue.length} overdue`);
-  if (today.length > 0) parts.push(`${today.length} due today`);
-  if (threads > 0) parts.push(`${threads} open threads`);
-
-  if (parts.length === 0) return "Clear day — nothing urgent.";
-  const header = parts.join(" · ");
-  const lines = today.slice(0, 4).map((i) => `• ${i.title}`);
-  if (today.length > 4) lines.push(`…and ${today.length - 4} more today`);
-  return [header, ...lines].join("\n");
 }

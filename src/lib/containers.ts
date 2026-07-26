@@ -1,5 +1,5 @@
 import type { Category, Item } from "../types";
-import { SCHOOL_KIND_LABELS, type SchoolKind } from "../types";
+import { SCHOOL_KIND_LABELS } from "../types";
 import { getRootProjects, sortItems } from "./projects";
 
 export function getChildGroup(item: Item): string | undefined {
@@ -63,26 +63,6 @@ export function matchSubgroup(
 ): string | undefined {
   const q = token.trim().toLowerCase();
   return subgroups.find((s) => s.toLowerCase() === q);
-}
-
-/** Map homework/exam shorthand to a subgroup label when possible */
-export function schoolTokenToSubgroup(
-  subgroups: string[],
-  token: string,
-): string | undefined {
-  const q = token.toLowerCase();
-  const aliases: Record<string, SchoolKind> = {
-    homework: "homework",
-    hw: "homework",
-    exam: "exam",
-    exams: "exam",
-  };
-  const kind = aliases[q];
-  if (kind) {
-    const label = SCHOOL_KIND_LABELS[kind];
-    return matchSubgroup(subgroups, label) ?? label;
-  }
-  return matchSubgroup(subgroups, token);
 }
 
 export function parseContainerQuickAdd(

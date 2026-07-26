@@ -111,4 +111,15 @@ describe("parseQuickAdd", () => {
     expect(note.type).toBe("note");
     expect(note.title).toBe("wifi password");
   });
+
+  it("parses due friday and trailing priority", () => {
+    const p = parseQuickAdd("cs homework due friday", categories, NOW);
+    expect(p.title).toBe("cs homework");
+    expect(p.dueAt).toBeTruthy();
+    expect(new Date(p.dueAt!).getDay()).toBe(5);
+
+    const urgent = parseQuickAdd("pay rent tomorrow !", categories, NOW);
+    expect(urgent.priority).toBe(true);
+    expect(urgent.title).toBe("pay rent");
+  });
 });

@@ -104,7 +104,3 @@ export function isActionable(item: Item): boolean {
     item.type !== "follow-up" && item.type !== "note" && item.type !== "project"
   );
 }
-
-export function isFollowUp(item: Item): boolean {
-  return item.type === "follow-up";
-}
