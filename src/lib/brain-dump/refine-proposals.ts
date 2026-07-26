@@ -74,6 +74,8 @@ function refineProposal(
     type,
     categoryId,
     categoryHint: parsed.categoryName ?? item.categoryHint,
+    parentFolderName: item.parentFolderName,
+    childGroup: item.childGroup,
     dueAt: parsed.dueAt ?? item.dueAt,
     priority: parsed.priority || item.priority,
     contactName,

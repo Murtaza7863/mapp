@@ -109,6 +109,7 @@ export function TodayView() {
       const applied = await applyProposals(result.items, categories, addItem, {
         actions: result.actions,
         addCategory,
+        existingItems: items,
       });
       const total =
         applied.items.length +

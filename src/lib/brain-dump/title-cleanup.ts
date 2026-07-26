@@ -1,7 +1,7 @@
 import type { ItemType } from "../../types";
 
 const FILLER_PREFIX =
-  /^(?:need to|remember to|have to|gotta|should|don't forget to|also|maybe|probably)\s+/i;
+  /^(?:need to|remember to|remind me to|have to|gotta|should|don't forget to|also|maybe|probably)\s+/i;
 
 const STRAY_DATE_TOKENS =
   /\b(?:tomorrow|today|tonight|tmrw|tmr|next week|next monday|next tuesday|next wednesday|next thursday|next friday|next saturday|next sunday)\b/gi;

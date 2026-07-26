@@ -242,6 +242,11 @@ export function ParseConfirmSheet({
                           priority
                         </span>
                       )}
+                      {item.parentFolderName && (
+                        <span className="bg-sky-400/10 text-sky-300 rounded-md px-2 py-1">
+                          in {item.parentFolderName}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>

@@ -10,6 +10,9 @@ export interface ProposedItem {
   type: ItemType;
   categoryId?: string;
   categoryHint?: string;
+  /** Nest under this folder when saving (created if missing) */
+  parentFolderName?: string;
+  childGroup?: string;
   dueAt?: string;
   priority: boolean;
   notes?: string;

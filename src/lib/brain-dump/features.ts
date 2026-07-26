@@ -115,7 +115,7 @@ export function matchFeatureIntent(
   if (!text) return null;
 
   const lead =
-    /^(?:please\s+)?(?:can you\s+)?(?:create|make|add|set up|setup)\s+(?:a\s+|an\s+)?(?:new\s+)?/i;
+    /^(?:please\s+)?(?:can you\s+)?(?:create|make|add|set up|setup|organize)\s+(?:a\s+|an\s+)?(?:new\s+)?/i;
 
   // folder named X in AREA / folder for X in AREA
   const folderNamedIn = text.match(

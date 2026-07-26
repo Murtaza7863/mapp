@@ -1,5 +1,6 @@
 import type { Category, Item, ItemInput } from "../../types";
 
+import { nextChildSortOrder } from "../projects";
 import type { ProposedFeatureAction, ProposedItem } from "./types";
 
 type AddItemFn = (
@@ -28,9 +29,43 @@ function pickAreaStyle(index: number): { color: string; icon: string } {
   };
 }
 
+async function ensureFolder(
+  existingItems: Item[],
+  createdFolders: Map<string, Item>,
+  addItem: AddItemFn,
+  categoryId: string,
+  folderName: string,
+): Promise<Item> {
+  const key = `${categoryId}|${folderName.toLowerCase()}`;
+  const cached = createdFolders.get(key);
+  if (cached) return cached;
+
+  const found = existingItems.find(
+    (i) =>
+      i.type === "project" &&
+      i.categoryId === categoryId &&
+      i.title.toLowerCase() === folderName.toLowerCase(),
+  );
+  if (found) {
+    createdFolders.set(key, found);
+    return found;
+  }
+
+  const folder = await addItem({
+    title: folderName,
+    type: "project",
+    categoryId,
+  });
+  createdFolders.set(key, folder);
+  existingItems.push(folder);
+  return folder;
+}
+
 async function applyFeatureActions(
   actions: ProposedFeatureAction[],
   categories: Category[],
+  existingItems: Item[],
+  createdFolders: Map<string, Item>,
   addItem: AddItemFn,
   addCategory?: AddCategoryFn,
 ): Promise<{ foldersCreated: number; areasCreated: number }> {
@@ -54,12 +89,15 @@ async function applyFeatureActions(
         categories[0]?.id ??
         "";
 
-      await addItem({
-        title: action.title.trim(),
-        type: "project",
+      const before = createdFolders.size;
+      await ensureFolder(
+        existingItems,
+        createdFolders,
+        addItem,
         categoryId,
-      });
-      foldersCreated += 1;
+        action.title.trim(),
+      );
+      if (createdFolders.size > before) foldersCreated += 1;
       continue;
     }
 
@@ -91,13 +129,18 @@ export async function applyProposals(
   options: {
     actions?: ProposedFeatureAction[];
     addCategory?: AddCategoryFn;
+    existingItems?: Item[];
   } = {},
 ): Promise<ApplyProposalsResult> {
   const created: Item[] = [];
+  const existingItems = [...(options.existingItems ?? [])];
+  const createdFolders = new Map<string, Item>();
 
   const featureStats = await applyFeatureActions(
     options.actions ?? [],
     categories,
+    existingItems,
+    createdFolders,
     addItem,
     options.addCategory,
   );
@@ -115,10 +158,28 @@ export async function applyProposals(
       categories[0]?.id ??
       "";
 
+    let parentId: string | undefined;
+    if (proposal.parentFolderName?.trim()) {
+      const folder = await ensureFolder(
+        existingItems,
+        createdFolders,
+        addItem,
+        categoryId,
+        proposal.parentFolderName.trim(),
+      );
+      parentId = folder.id;
+    }
+
     const item = await addItem({
       title: proposal.title.trim(),
       type: proposal.type,
       categoryId,
+      parentId,
+      childGroup: proposal.childGroup,
+      sortOrder:
+        parentId !== undefined
+          ? nextChildSortOrder(existingItems, parentId)
+          : undefined,
       dueAt: proposal.dueAt,
       priority: proposal.priority,
       notes: proposal.notes,
@@ -131,6 +192,7 @@ export async function applyProposals(
         : {}),
     });
 
+    existingItems.push(item);
     created.push(item);
   }
 

@@ -3,8 +3,11 @@ import { v4 as uuidv4 } from "uuid";
 import type { Category, ItemType } from "../../types";
 import { parseQuickAdd } from "../quickadd";
 
+import { stripAreaSuffix } from "./area-hints";
 import { extractContact } from "./contacts";
 import { featureIntentToProposal, matchFeatureIntent } from "./features";
+import { parseFolderTaskLine } from "./folder-parse";
+import { expandLineSegments } from "./line-split";
 import {
   CONTEXT_MERGE_SEP,
   isValidTask,
@@ -24,6 +27,7 @@ const FOLLOW_UP_RE =
 const ROUTINE_RE =
   /\b(routine|every day|daily|weekly|gym|habit|each morning|each evening)\b/i;
 const NOTE_RE = /^note:\s*/i;
+const JOT_NOTE_RE = /^(?:jot down|write down|capture)\s*:\s*/i;
 const PROJECT_RE = /^project:\s*/i;
 
 function cleanListLine(line: string): string {
@@ -87,13 +91,20 @@ export function splitDumpLines(text: string): string[] {
     }
   }
 
-  const chunks = normalized.split(/\n+/).map(cleanListLine).filter(Boolean);
+  const chunks = normalized
+    .split(/\n+/)
+    .flatMap((chunk) =>
+      chunk.includes(";")
+        ? chunk.split(/\s*;\s*/).map(cleanListLine).filter(Boolean)
+        : [cleanListLine(chunk)],
+    )
+    .filter(Boolean);
 
   return chunks.length > 0 ? chunks : [normalized].filter(Boolean);
 }
 
 export function inferTypeFromLine(line: string): ItemType {
-  if (NOTE_RE.test(line)) return "note";
+  if (NOTE_RE.test(line) || JOT_NOTE_RE.test(line)) return "note";
   if (PROJECT_RE.test(line)) return "project";
   if (FOLLOW_UP_RE.test(line)) return "follow-up";
   if (ROUTINE_RE.test(line)) return "routine";
@@ -103,6 +114,7 @@ export function inferTypeFromLine(line: string): ItemType {
 export function stripTypePrefix(line: string): string {
   return line
     .replace(NOTE_RE, "")
+    .replace(JOT_NOTE_RE, "")
     .replace(PROJECT_RE, "")
     .replace(/^(follow[- ]?up|fu|deadline|task|routine):\s*/i, "")
     .trim();
@@ -127,27 +139,45 @@ function lineToProposal(
   line: string,
   categories: Category[],
   now: Date,
+  options: { parentFolderName?: string; categoryId?: string } = {},
 ): ProposedItem | null {
   const { taskLine, contextContact } = splitContextTaskLine(line);
-  const cleaned = stripTypePrefix(taskLine);
-  if (!cleaned || !looksLikeTaskSegment(cleaned)) return null;
+  const areaStripped = stripAreaSuffix(taskLine, categories);
+  const category =
+    categories.find((c) => c.id === (options.categoryId ?? areaStripped.categoryId)) ??
+    categories.find(
+      (c) =>
+        areaStripped.categoryHint &&
+        c.name.toLowerCase().startsWith(areaStripped.categoryHint.toLowerCase()),
+    );
 
-  const inferredType = inferTypeFromLine(taskLine);
+  const folderTask = parseFolderTaskLine(areaStripped.text, category);
+  const workingLine = folderTask?.taskTitle ?? areaStripped.text;
+
+  const cleaned = stripTypePrefix(workingLine);
+  const hasExplicitType = /^(?:note|follow[- ]?up|fu|deadline|task|routine|project|jot down|write down|capture):/i.test(
+    workingLine,
+  );
+  if (!cleaned || (!looksLikeTaskSegment(cleaned) && !hasExplicitType)) {
+    return null;
+  }
+
+  const inferredType = inferTypeFromLine(workingLine);
   const parsed = parseQuickAdd(cleaned, categories, now);
   if (!parsed.title.trim()) return null;
 
-  const contactName = contextContact ?? extractContact(taskLine);
+  const contactName = contextContact ?? extractContact(workingLine);
   const type = parsed.type ?? inferredType;
   const title = polishTitle(
     parsed.title,
-    taskLine,
+    workingLine,
     type,
     contactName,
     contextContact,
   );
 
   if (
-    !isValidTask(taskLine, title, {
+    !isValidTask(workingLine, title, {
       dueAt: parsed.dueAt,
       contactName,
       type,
@@ -157,6 +187,8 @@ function lineToProposal(
   }
 
   const categoryId =
+    options.categoryId ??
+    areaStripped.categoryId ??
     parsed.categoryId ??
     resolveCategoryId(parsed.categoryName, categories) ??
     categories[0]?.id;
@@ -166,7 +198,9 @@ function lineToProposal(
     title,
     type,
     categoryId,
-    categoryHint: parsed.categoryName,
+    categoryHint: areaStripped.categoryHint ?? parsed.categoryName,
+    parentFolderName: folderTask?.folderName ?? options.parentFolderName,
+    childGroup: folderTask?.childGroup,
     dueAt: parsed.dueAt,
     priority: parsed.priority,
     contactName,
@@ -185,25 +219,36 @@ export function parseDumpWithRules(
   const actions: ProposedFeatureAction[] = [];
   const seenItems = new Set<string>();
   const seenActions = new Set<string>();
+  let pendingFolder: string | undefined;
 
   for (const line of lines) {
-    const feature = matchFeatureIntent(line, categories);
-    if (feature) {
-      const action = featureIntentToProposal(feature, categories);
-      const key = `${action.kind}|${action.title.toLowerCase()}|${action.categoryHint ?? ""}`;
-      if (!seenActions.has(key)) {
-        seenActions.add(key);
-        actions.push(action);
+    const segments = expandLineSegments(line, categories);
+    for (const segment of segments) {
+      const feature = matchFeatureIntent(segment, categories);
+      if (feature) {
+        const action = featureIntentToProposal(feature, categories);
+        const key = `${action.kind}|${action.title.toLowerCase()}|${action.categoryHint ?? ""}`;
+        if (!seenActions.has(key)) {
+          seenActions.add(key);
+          actions.push(action);
+        }
+        if (feature.featureId === "create_folder") {
+          pendingFolder = feature.title;
+        }
+        continue;
       }
-      continue;
-    }
 
-    const proposal = lineToProposal(line, categories, now);
-    if (!proposal) continue;
-    const key = `${proposal.title.toLowerCase()}|${proposal.dueAt ?? ""}`;
-    if (seenItems.has(key)) continue;
-    seenItems.add(key);
-    items.push(proposal);
+      const proposal = lineToProposal(segment, categories, now, {
+        parentFolderName: pendingFolder,
+      });
+      if (!proposal) continue;
+      pendingFolder = undefined;
+
+      const key = `${proposal.title.toLowerCase()}|${proposal.parentFolderName ?? ""}|${proposal.dueAt ?? ""}`;
+      if (seenItems.has(key)) continue;
+      seenItems.add(key);
+      items.push(proposal);
+    }
   }
 
   const clarifications: string[] = [];
