@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from "uuid";
 
 import type { Category } from "../../types";
 
+import { normalizePlotLine } from "./ramble";
 import type { AppFeatureId, ProposedFeatureAction } from "./types";
 
 function resolveCategoryId(
@@ -111,7 +112,7 @@ export function matchFeatureIntent(
   line: string,
   categories: Category[] = [],
 ): MatchedFeature | null {
-  const text = line.trim().replace(/[.!?]+$/, "");
+  const text = normalizePlotLine(line.trim()).replace(/[.!?]+$/, "");
   if (!text) return null;
 
   const lead =

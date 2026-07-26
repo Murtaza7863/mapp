@@ -9,6 +9,11 @@ import { featureIntentToProposal, matchFeatureIntent } from "./features";
 import { parseFolderTaskLine } from "./folder-parse";
 import { expandLineSegments } from "./line-split";
 import {
+  normalizePlotLine,
+  parseFolderCompoundRamble,
+  splitRambleSentences,
+} from "./ramble";
+import {
   CONTEXT_MERGE_SEP,
   isValidTask,
   looksLikeTaskSegment,
@@ -66,8 +71,21 @@ export function splitDumpLines(text: string): string[] {
   const normalized = text.trim();
   if (!normalized) return [];
 
-  if (!normalized.includes("\n")) {
-    const commaParts = normalized
+  if (normalized.includes("\n")) {
+    return normalized
+      .split(/\n+/)
+      .flatMap((chunk) => splitDumpLines(chunk));
+  }
+
+  const rambleLines = splitRambleSentences(normalized);
+  if (rambleLines.length > 1) {
+    return rambleLines.flatMap((line) => splitDumpLines(line));
+  }
+
+  const line = normalizePlotLine(normalized);
+
+  if (!line.includes("\n")) {
+    const commaParts = line
       .split(/,\s+/)
       .map((s) => s.trim())
       .filter(Boolean);
@@ -91,7 +109,7 @@ export function splitDumpLines(text: string): string[] {
     }
   }
 
-  const chunks = normalized
+  const chunks = line
     .split(/\n+/)
     .flatMap((chunk) => {
       const pieces = chunk.includes(";")
@@ -103,7 +121,7 @@ export function splitDumpLines(text: string): string[] {
     })
     .filter(Boolean);
 
-  return chunks.length > 0 ? chunks : [normalized].filter(Boolean);
+  return chunks.length > 0 ? chunks : [line].filter(Boolean);
 }
 
 export function inferTypeFromLine(line: string): ItemType {
@@ -230,7 +248,37 @@ export function parseDumpWithRules(
   let pendingFolder: string | undefined;
 
   for (const line of lines) {
-    const segments = expandLineSegments(line, categories);
+    const normalizedLine = normalizePlotLine(line);
+    const compoundFolder = parseFolderCompoundRamble(normalizedLine);
+    if (compoundFolder) {
+      const feature = matchFeatureIntent(
+        `create folder for ${compoundFolder.folderName}`,
+        categories,
+      );
+      if (feature) {
+        const action = featureIntentToProposal(feature, categories);
+        const key = `${action.kind}|${action.title.toLowerCase()}|${action.categoryHint ?? ""}`;
+        if (!seenActions.has(key)) {
+          seenActions.add(key);
+          actions.push(action);
+        }
+        pendingFolder = feature.title;
+      }
+      const proposal = lineToProposal(compoundFolder.taskTitle, categories, now, {
+        parentFolderName: pendingFolder ?? compoundFolder.folderName,
+      });
+      if (proposal) {
+        const key = `${proposal.title.toLowerCase()}|${proposal.parentFolderName ?? ""}|${proposal.dueAt ?? ""}`;
+        if (!seenItems.has(key)) {
+          seenItems.add(key);
+          items.push(proposal);
+        }
+      }
+      pendingFolder = undefined;
+      continue;
+    }
+
+    const segments = expandLineSegments(normalizedLine, categories);
     for (const segment of segments) {
       const feature = matchFeatureIntent(segment, categories);
       if (feature) {

@@ -1,7 +1,7 @@
 import type { ItemType } from "../../types";
 
 const FILLER_PREFIX =
-  /^(?:need to|remember to|remind me to|don't forget(?:\s+to)?|dont forget(?:\s+to)?|have to|gotta|should|also|maybe|probably)\s+/i;
+  /^(?:need to|remember to|remind me(?:\s+that)?(?:\s+I)?(?:\s+promised)?|don't forget(?:\s+to)?|dont forget(?:\s+to)?|have to|gotta|should|also|maybe|probably|I'?ve been putting this off forever but I really really need to|I really need to|I need to)\s+/i;
 
 const STRAY_DATE_TOKENS =
   /\b(?:tomorrow|today|tonight|tmrw|tmr|next week|next monday|next tuesday|next wednesday|next thursday|next friday|next saturday|next sunday)\b/gi;
@@ -154,6 +154,19 @@ export function isValidTask(
   if (/^(hmm?|um+|lol|ok\??|yes\.?|no\.?)$/.test(t)) return false;
 
   if (JUNK_LINE_RE.test(line.trim())) return false;
+
+  // Venting / mood-only lines with no actionable verb
+  if (
+    /^(?:today was|i'?m so|super stressed|nothing matters|was a long day)/i.test(
+      line.trim(),
+    ) &&
+    !/\b(?:email|call|pay|buy|submit|renew|book|send|follow|bump|schedule)\b/i.test(
+      line,
+    )
+  ) {
+    return false;
+  }
+
   if (/^(if|when|unless|although|because)\b/i.test(t)) return false;
 
   if (ctx.type === "note" || ctx.type === "follow-up") {
@@ -185,6 +198,20 @@ export function looksLikeTaskSegment(segment: string): boolean {
   if (parseContextClause(s)) return false;
   if (/^(and|or|also|but|then|so)$/i.test(s)) return false;
   if (JUNK_LINE_RE.test(s)) return false;
+  if (
+    /\b(?:create|make|add|new)\s+(?:a\s+)?folder\b/i.test(s) ||
+    /\b(?:need|want)\s+(?:a\s+)?folder\b/i.test(s)
+  ) {
+    return false;
+  }
+
+  if (
+    /\b(?:schedule|book|renew|submit|sort out|bump|email|call|pay|buy|send)\b/i.test(
+      s,
+    )
+  ) {
+    return true;
+  }
 
   if (
     /\b(?:tomorrow|today|tonight|monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun)\b/i.test(

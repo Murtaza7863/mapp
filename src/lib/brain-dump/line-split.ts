@@ -1,6 +1,7 @@
 import type { Category } from "../../types";
 
 import { matchFeatureIntent } from "./features";
+import { normalizePlotLine } from "./ramble";
 import { looksLikeTaskSegment } from "./title-cleanup";
 
 /** Split `;` chunks, `task and task`, and `feature and task` compounds. */
@@ -26,8 +27,9 @@ function trySplitAndSegments(
   part: string,
   categories: Category[],
 ): string[] {
-  const andMatch = part.match(/^(.+?)\s+and\s+(.+)$/i);
-  if (!andMatch) return [part];
+  const normalized = normalizePlotLine(part);
+  const andMatch = normalized.match(/^(.+?)\s+and\s+(.+)$/i);
+  if (!andMatch) return [normalized];
 
   const left = andMatch[1].trim();
   const right = andMatch[2].trim();
@@ -54,6 +56,16 @@ function trySplitAndSegments(
     }
   }
 
+  // Feature + task with “and also” — check before generic two-task split
+  const alsoRight = right.replace(/^also\s+/i, "").trim();
+  if (matchFeatureIntent(left, categories) && looksLikeTaskSegment(alsoRight)) {
+    return [left, alsoRight];
+  }
+
+  if (leftIsFeature && looksLikeTaskSegment(alsoRight)) {
+    return [left, alsoRight];
+  }
+
   // Two separate tasks: “call mom and buy milk tomorrow”
   if (
     !leftIsFeature &&
@@ -65,5 +77,5 @@ function trySplitAndSegments(
     return [left, right];
   }
 
-  return [part];
+  return [normalized];
 }
