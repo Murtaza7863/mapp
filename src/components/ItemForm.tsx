@@ -187,7 +187,7 @@ export function ItemForm({
   };
 
   return (
-    <div className="bg-overlay fixed inset-0 z-50 flex items-end justify-center  sm:items-center">
+    <div className="bg-overlay fixed inset-0 z-50 flex items-end justify-center sm:items-center">
       <div className="modal-sheet max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-t-3xl sm:rounded-3xl">
         <div className="modal-accent-bar rounded-t-3xl sm:rounded-t-3xl" />
         <div className="p-5">
@@ -198,7 +198,7 @@ export function ItemForm({
             <button
               type="button"
               onClick={onClose}
-              className="bg-white/5 text-muted hover:text-primary rounded-full p-2"
+              className="bg-paper text-muted hover:text-primary rounded-full p-2"
               aria-label="Close"
             >
               <CloseIcon className="h-4 w-4" />
@@ -325,7 +325,7 @@ export function ItemForm({
             )}
 
             {type === "follow-up" && (
-              <div className="border-white/[0.06] space-y-3 rounded-xl border p-3.5">
+              <div className="border-rule space-y-3 rounded-xl border p-3.5">
                 <div>
                   <label className="section-label mb-1.5 block">
                     Company / person
@@ -489,27 +489,24 @@ export function ItemForm({
               />
             </div>
 
-            <label className="border-white/8 bg-white/3 text-primary flex items-center gap-2.5 rounded-xl border px-3 py-2.5 text-sm">
+            <label className="border-rule bg-paper text-primary flex items-center gap-2.5 rounded-xl border px-3 py-2.5 text-sm">
               <input
                 type="checkbox"
                 checked={notificationsMuted}
                 onChange={(e) => setNotificationsMuted(e.target.checked)}
-                className="rounded accent-[#8b7cf8]"
+                className="rounded accent-[var(--color-block)]"
               />
               Mute notifications for this item
             </label>
 
-            <label className="border-white/8 bg-white/3 text-primary flex items-center gap-2.5 rounded-xl border px-3 py-2.5 text-sm">
+            <label className="border-rule bg-paper text-primary flex items-center gap-2.5 rounded-xl border px-3 py-2.5 text-sm">
               <input
                 type="checkbox"
                 checked={priority}
                 onChange={(e) => setPriority(e.target.checked)}
-                className="rounded accent-[#8b7cf8]"
+                className="rounded accent-[var(--color-block)]"
               />
-              <StarIcon
-                filled={priority}
-                className="text-amber-400 h-3.5 w-3.5"
-              />
+              <StarIcon filled={priority} className="text-warn h-3.5 w-3.5" />
               Priority
             </label>
 
@@ -568,7 +565,7 @@ export function SnoozeSheet({
 
   return (
     <div
-      className="bg-overlay fixed inset-0 z-50 flex items-end "
+      className="bg-overlay fixed inset-0 z-50 flex items-end"
       onClick={onClose}
     >
       <div
@@ -584,7 +581,7 @@ export function SnoozeSheet({
             <button
               type="button"
               onClick={onWakeNow}
-              className="border-emerald-500/30 bg-emerald-500/10 text-emerald-300 mb-3 w-full rounded-2xl border px-4 py-3.5 text-left font-medium"
+              className="border-emerald-200 bg-emerald-50 text-emerald-800 mb-3 w-full rounded-2xl border px-4 py-3.5 text-left font-medium"
             >
               Wake now
             </button>
@@ -610,7 +607,7 @@ export function SnoozeSheet({
           </div>
 
           {showCustom && (
-            <div className="border-white/8 mt-4 space-y-3 border-t pt-4">
+            <div className="border-rule mt-4 space-y-3 border-t pt-4">
               <div className="grid grid-cols-2 gap-2">
                 <DatePickerField
                   value={customDate}

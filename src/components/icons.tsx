@@ -50,6 +50,16 @@ export function ClockIcon({ className, style }: IconProps) {
   );
 }
 
+/** Reply / follow-up — distinct from ClockIcon (snooze). */
+export function ReplyIcon({ className, style }: IconProps) {
+  return (
+    <svg {...base} className={className} style={style}>
+      <path d="M9 14L4 9l5-5" />
+      <path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H14" />
+    </svg>
+  );
+}
+
 export function DotsIcon({ className, style }: IconProps) {
   return (
     <svg {...base} className={className} style={style}>
@@ -198,15 +208,6 @@ export function ArrowRightIcon({ className, style }: IconProps) {
   return (
     <svg {...base} className={className} style={style}>
       <path d="M5 12h14M13 6l6 6-6 6" />
-    </svg>
-  );
-}
-
-export function MapIcon({ className, style }: IconProps) {
-  return (
-    <svg {...base} className={className} style={style}>
-      <path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2V6z" />
-      <path d="M9 4v14M15 6v14" />
     </svg>
   );
 }

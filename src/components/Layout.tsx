@@ -2,6 +2,7 @@ import { format } from "date-fns";
 import { useMemo, useState } from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 
+import { APP_NAME } from "../config";
 import { useCommandShortcuts } from "../hooks/useCommandShortcuts";
 import { useItems } from "../hooks/useItems";
 import {
@@ -14,15 +15,15 @@ import {
   CalendarIcon,
   ChartIcon,
   ChevronRightIcon,
-  ClockIcon,
   DotsIcon,
   FolderIcon,
   GridIcon,
   HistoryIcon,
-  MountainIcon,
   NoteIcon,
+  ReplyIcon,
   SearchIcon,
   SettingsIcon,
+  SparkIcon,
   SunIcon,
 } from "./icons";
 import { InstallPrompt } from "./InstallPrompt";
@@ -33,19 +34,20 @@ const mainLinks = [
   { to: "/", label: "Home", Icon: SunIcon },
   { to: "/calendar", label: "Calendar", Icon: CalendarIcon },
   { to: "/categories", label: "Areas", Icon: GridIcon },
-  {
-    to: "/follow-ups",
-    label: "Threads",
-    Icon: ClockIcon,
-    badgeKey: "threads" as const,
-  },
 ];
 
 const moreLinks = [
+  { to: "/guide", label: "How it works", Icon: SparkIcon },
+  {
+    to: "/follow-ups",
+    label: "Follow-ups",
+    Icon: ReplyIcon,
+    badgeKey: "followups" as const,
+  },
   {
     to: "/deadlines",
     label: "Event prep",
-    Icon: MountainIcon,
+    Icon: CalendarIcon,
     badgeKey: "prep" as const,
   },
   { to: "/folders", label: "All folders", Icon: FolderIcon },
@@ -59,7 +61,10 @@ const moreLinks = [
 function NavBadge({ count }: { count: number }) {
   if (count <= 0) return null;
   return (
-    <span className="nav-badge" aria-label={`${count} need attention`}>
+    <span
+      className="nav-badge"
+      aria-label={`${count} ${count === 1 ? "item needs" : "items need"} attention`}
+    >
       {count > 9 ? "9+" : count}
     </span>
   );
@@ -81,10 +86,10 @@ export function Layout() {
     [items],
   );
 
-  const moreBadgeCount = urgentPrepCount;
+  const moreBadgeCount = nudgeCount + urgentPrepCount;
 
-  const badgeFor = (key?: "threads" | "prep") => {
-    if (key === "threads") return nudgeCount;
+  const badgeFor = (key?: "followups" | "prep") => {
+    if (key === "followups") return nudgeCount;
     if (key === "prep") return urgentPrepCount;
     return 0;
   };
@@ -95,7 +100,7 @@ export function Layout() {
     <div className="app-shell mx-auto flex min-h-dvh max-w-lg flex-col">
       <header className="glass-panel app-header sticky top-0 z-40 px-4 py-3">
         <div className="flex items-center justify-between">
-          <Link to="/" aria-label="mApp home">
+          <Link to="/" aria-label={`${APP_NAME} home`}>
             <AppLogo size="sm" />
           </Link>
           <div className="flex items-center gap-1">
@@ -173,7 +178,7 @@ export function Layout() {
 
       <nav className="nav-floating fixed z-40">
         <div className="mx-auto flex max-w-lg justify-around px-0.5 py-1.5">
-          {mainLinks.map(({ to, label, Icon, badgeKey }) => (
+          {mainLinks.map(({ to, label, Icon }) => (
             <NavLink
               key={to}
               to={to}
@@ -184,10 +189,7 @@ export function Layout() {
                 }`
               }
             >
-              <span className="relative">
-                <Icon className="h-5 w-5" />
-                <NavBadge count={badgeFor(badgeKey)} />
-              </span>
+              <Icon className="h-5 w-5" />
               {label}
             </NavLink>
           ))}

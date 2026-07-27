@@ -95,7 +95,7 @@ export function CalendarView() {
       <div className="flex gap-2">
         {(["month", "week"] as const).map((m) => (
           <FilterPill key={m} active={mode === m} onClick={() => setMode(m)}>
-            {m}
+            {m === "month" ? "Month" : "Week"}
           </FilterPill>
         ))}
       </div>
@@ -141,11 +141,11 @@ export function CalendarView() {
               onClick={() => setSelectedDay(day)}
               className={`relative aspect-square rounded-xl text-sm transition-colors ${
                 selected
-                  ? "bg-[#ff7a59] font-semibold text-[#1a0f0a]"
+                  ? "bg-block text-white font-semibold"
                   : inMonth
-                    ? "text-primary hover:bg-white/5"
+                    ? "text-primary hover:bg-paper"
                     : "text-muted"
-              } ${isToday && !selected ? "ring-1 ring-[#ff7a59]/40" : ""}`}
+              } ${isToday && !selected ? "ring-block/45 font-semibold ring-1" : ""}`}
             >
               {format(day, "d")}
               {dayEntries.length > 0 && (

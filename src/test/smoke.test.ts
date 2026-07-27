@@ -31,6 +31,7 @@ describe("spa routes", () => {
     "/notes",
     "/history",
     "/insights",
+    "/guide",
     "/settings",
   ];
 

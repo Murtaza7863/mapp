@@ -3,10 +3,7 @@ import { parseISO } from "date-fns";
 import type { Item } from "../types";
 
 import { isDueToday, isOverdue, isUpcoming } from "./dates";
-import {
-  buildEventDeadlineEntries,
-  deadlineUrgency,
-} from "./event-deadlines";
+import { buildEventDeadlineEntries, deadlineUrgency } from "./event-deadlines";
 import { isActionable } from "./items";
 import { chaseReason, needsChase } from "./pipeline";
 
@@ -34,7 +31,7 @@ export const BUCKET_LABELS: Record<FeedBucket, string> = {
   overdue: "Overdue",
   today: "Today",
   routine: "Daily habits",
-  "follow-up": "Threads due",
+  "follow-up": "Follow-ups due",
   snoozed: "Snoozed",
   upcoming: "Coming up",
 };
@@ -221,9 +218,7 @@ export function filterFeedByFocus(
   if (!focus) return feed;
   if (focus === "priority") return feed.filter((e) => e.item.priority);
   if (focus === "follow-up") {
-    return feed.filter(
-      (e) => e.bucket === "chase" || e.bucket === "follow-up",
-    );
+    return feed.filter((e) => e.bucket === "chase" || e.bucket === "follow-up");
   }
   return feed.filter((e) => e.bucket === focus);
 }

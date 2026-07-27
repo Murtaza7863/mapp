@@ -1,9 +1,6 @@
 import type { Item, PipelineStage } from "../types";
 
-import {
-  applyThreadStage,
-  THREAD_QUICK_ACTIONS,
-} from "../lib/thread-actions";
+import { applyThreadStage, THREAD_QUICK_ACTIONS } from "../lib/thread-actions";
 import { PIPELINE_STAGE_LABELS } from "../types";
 
 interface Props {
@@ -14,7 +11,11 @@ interface Props {
 export function ThreadActions({ item, onUpdate }: Props) {
   if (item.type !== "follow-up" || item.status === "done") return null;
 
-  const apply = (stage: PipelineStage, bumpContact?: boolean, scheduleCheckBack?: boolean) => {
+  const apply = (
+    stage: PipelineStage,
+    bumpContact?: boolean,
+    scheduleCheckBack?: boolean,
+  ) => {
     const action = THREAD_QUICK_ACTIONS.find(
       (a) =>
         a.stage === stage &&
@@ -36,8 +37,8 @@ export function ThreadActions({ item, onUpdate }: Props) {
           }
           className={`min-h-[36px] rounded-lg px-2.5 py-1.5 text-[11px] font-medium ${
             item.pipelineStage === action.stage
-              ? "bg-violet-500/20 text-violet-200"
-              : "bg-white/5 text-muted active:bg-white/10"
+              ? "bg-sky-50 text-block"
+              : "bg-paper text-muted active:bg-rule"
           }`}
         >
           {action.label}

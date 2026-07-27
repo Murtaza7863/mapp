@@ -117,12 +117,12 @@ export function HistoryView() {
                         onClick={() =>
                           handleReopen(entry.itemId, entry.itemTitle)
                         }
-                        className="text-sky-400 mt-3 min-h-[44px] text-xs font-medium"
+                        className="text-block mt-3 min-h-[44px] text-xs font-medium"
                       >
                         Reopen
                       </button>
                     </div>
-                    <CheckIcon className="text-emerald-500 h-4 w-4 shrink-0" />
+                    <CheckIcon className="text-emerald-600 h-4 w-4 shrink-0" />
                   </div>
                 </div>
               ))}

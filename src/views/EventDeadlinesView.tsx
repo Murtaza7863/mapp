@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import type { Item } from "../types";
 
 import { EventDeadlinesSection } from "../components/EventDeadlinesSection";
-import { MountainIcon } from "../components/icons";
+import { CalendarIcon } from "../components/icons";
 import { ItemForm, SnoozeSheet } from "../components/ItemForm";
 import { SwipeItem } from "../components/SwipeItem";
 import { ThreadActions } from "../components/ThreadActions";
@@ -58,7 +58,7 @@ export function EventDeadlinesView() {
 
       {entries.length === 0 && threads.length === 0 ? (
         <EmptyState
-          icon={<MountainIcon className="h-5 w-5" />}
+          icon={<CalendarIcon className="h-5 w-5" />}
           title="No linked events"
           description="Add a follow-up with a linked event date — prep deadlines are calculated automatically (10 weeks before)."
         />
@@ -75,7 +75,7 @@ export function EventDeadlinesView() {
           {threads.length > 0 && (
             <section className="section-block">
               <h2 className="text-muted mb-2 text-xs font-semibold tracking-wide uppercase">
-                All threads
+                All follow-ups
               </h2>
               <div className="item-list">
                 {threads.map((item) => (

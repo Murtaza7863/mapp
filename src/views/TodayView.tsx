@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 
 import type { ParseDumpResult } from "../lib/brain-dump/types";
 import type { FeedEntry, FeedFocus } from "../lib/feed";
@@ -10,12 +10,9 @@ import { EventDeadlinesSection } from "../components/EventDeadlinesSection";
 import { StarIcon } from "../components/icons";
 import { ItemForm, SnoozeSheet } from "../components/ItemForm";
 import { LoadingView } from "../components/LoadingView";
-import { NudgeQueue } from "../components/NudgeQueue";
 import { PlotBar } from "../components/PlotBar";
-import { QuickAddBar } from "../components/QuickAddBar";
 import { StatusLine } from "../components/StatusLine";
 import { SwipeItem } from "../components/SwipeItem";
-import { ThreadActions } from "../components/ThreadActions";
 import { TriageSession } from "../components/TriageSession";
 import { EmptyState, FilterPill, SectionHeader } from "../components/ui";
 import { WrapUpSheet, tomorrowMorning } from "../components/WrapUpSheet";
@@ -36,7 +33,6 @@ import {
   groupFeedByBucket,
 } from "../lib/feed";
 import { computeMomentum } from "../lib/momentum";
-import { buildSuggestions } from "../lib/pipeline";
 import { setLastCategoryId } from "../lib/preferences";
 import { computeTodaySummary } from "../lib/stats";
 import { findQuickAction } from "../lib/thread-actions";
@@ -64,7 +60,6 @@ export function TodayView() {
   const { deleteWithUndo } = useUndo();
   const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState<Item | null>(null);
   const [snoozeItem, setSnoozeItem] = useState<Item | null>(null);
   const [feedFocus, setFeedFocus] = useState<FeedFocus | null>(null);
@@ -73,7 +68,6 @@ export function TodayView() {
   const [wrapUpOpen, setWrapUpOpen] = useState(false);
   const [triageOpen, setTriageOpen] = useState(false);
   const [triageQueue, setTriageQueue] = useState<Item[]>([]);
-  const [plotPasteText, setPlotPasteText] = useState<string | undefined>();
 
   const folderNames = useMemo(() => {
     const map = new Map<string, string>();
@@ -96,17 +90,11 @@ export function TodayView() {
     () => computeMomentum(items, completions),
     [items, completions],
   );
-  const suggestions = useMemo(() => buildSuggestions(items), [items]);
   const fullFeed = useMemo(() => buildCommandFeed(items), [items]);
   const feed = useMemo(() => {
     const byFocus = filterFeedByFocus(fullFeed, feedFocus);
     return filterFeedByCategory(byFocus, areaFilter);
   }, [fullFeed, feedFocus, areaFilter]);
-
-  const hasNudgesInFeed = useMemo(
-    () => feed.some((e) => e.bucket === "chase"),
-    [feed],
-  );
 
   const chaseMode = feedFocus === "chase";
 
@@ -123,9 +111,12 @@ export function TodayView() {
     if (!action || chaseItems.length === 0) return;
     const updates = applyThreadActionToItems(chaseItems, action);
     await updateItems(updates);
-    toast(`Bumped ${updates.length} thread${updates.length === 1 ? "" : "s"}`, {
-      kind: "success",
-    });
+    toast(
+      `Bumped ${updates.length} follow-up${updates.length === 1 ? "" : "s"}`,
+      {
+        kind: "success",
+      },
+    );
   };
 
   const parkForTomorrow = async () => {
@@ -243,32 +234,22 @@ export function TodayView() {
 
   const renderEntry = (entry: FeedEntry) => {
     const { item, reason } = entry;
-    const isThread = item.type === "follow-up";
 
     return (
-      <div key={item.id}>
-        <SwipeItem
-          item={item}
-          category={getCategory(item.categoryId)}
-          parentFolderName={
-            item.parentId ? folderNames.get(item.parentId) : undefined
-          }
-          reason={reason}
-          showType
-          onDone={() => handlers.onDone(item)}
-          onSnooze={() => handlers.onSnooze(item)}
-          onEdit={() => handlers.onEdit(item)}
-          onDelete={() => handlers.onDelete(item)}
-        />
-        {isThread && (
-          <ThreadActions
-            item={item}
-            onUpdate={(changes) => {
-              void updateItem(item.id, changes).catch(actionError);
-            }}
-          />
-        )}
-      </div>
+      <SwipeItem
+        key={item.id}
+        item={item}
+        category={getCategory(item.categoryId)}
+        parentFolderName={
+          item.parentId ? folderNames.get(item.parentId) : undefined
+        }
+        reason={reason}
+        showType
+        onDone={() => handlers.onDone(item)}
+        onSnooze={() => handlers.onSnooze(item)}
+        onEdit={() => handlers.onEdit(item)}
+        onDelete={() => handlers.onDelete(item)}
+      />
     );
   };
 
@@ -282,13 +263,6 @@ export function TodayView() {
             day: "numeric",
           })}
         </p>
-        <button
-          type="button"
-          onClick={() => setShowForm(true)}
-          className="btn-ghost ml-auto min-h-[40px] shrink-0 rounded-lg px-3 py-2 text-sm"
-        >
-          Add item
-        </button>
       </div>
 
       <AiBriefingCard
@@ -301,24 +275,9 @@ export function TodayView() {
         showWrapUp={isWrapUpTime()}
       />
 
-      <PlotBar
-        categories={categories}
-        initialText={plotPasteText}
-        onParsed={handlePlot}
-      />
-
-      <QuickAddBar
-        categories={categories}
-        onPasteToPlot={(text) => setPlotPasteText(text)}
-        onAdd={async (data) => {
-          const created = await addItem(data);
-          if (created.categoryId) setLastCategoryId(created.categoryId);
-          toast("Added", { kind: "success" });
-        }}
-      />
+      <PlotBar categories={categories} onParsed={handlePlot} />
 
       <StatusLine
-        briefing={briefing}
         summary={summary}
         momentum={momentum}
         focus={feedFocus}
@@ -335,39 +294,12 @@ export function TodayView() {
           className="home-threads-banner w-full text-left"
         >
           <span>
-            {summary.triage} capture{summary.triage === 1 ? "" : "s"} still need
-            a date
+            {summary.triage === 1
+              ? "1 capture still needs a date"
+              : `${summary.triage} captures still need a date`}
           </span>
           <span className="home-threads-banner-cta">Set dates →</span>
         </button>
-      )}
-
-      {summary.needsNudge > 0 && !hasNudgesInFeed && !chaseMode && (
-        <button
-          type="button"
-          onClick={() => setFeedFocus("chase")}
-          className="home-threads-banner w-full text-left"
-        >
-          <span>
-            {summary.needsNudge} thread{summary.needsNudge === 1 ? "" : "s"} to
-            nudge
-          </span>
-          <span className="home-threads-banner-cta">Work through →</span>
-        </button>
-      )}
-
-      {!chaseMode && suggestions.length > 0 && (
-        <NudgeQueue
-          suggestions={suggestions}
-          items={items}
-          onSelect={(id) => {
-            const item = items.find((i) => i.id === id);
-            if (item) setEditItem(item);
-          }}
-          onUpdate={(id, changes) => {
-            void updateItem(id, changes).catch(actionError);
-          }}
-        />
       )}
 
       <EventDeadlinesSection
@@ -402,12 +334,16 @@ export function TodayView() {
         >
           Prep
         </FilterPill>
-        <FilterPill
-          active={feedFocus === "chase"}
-          onClick={() => setFeedFocus((f) => (f === "chase" ? null : "chase"))}
-        >
-          Nudge{chaseCount > 0 ? ` · ${chaseCount}` : ""}
-        </FilterPill>
+        {chaseCount > 0 && (
+          <FilterPill
+            active={feedFocus === "chase"}
+            onClick={() =>
+              setFeedFocus((f) => (f === "chase" ? null : "chase"))
+            }
+          >
+            Nudge · {chaseCount}
+          </FilterPill>
+        )}
         <FilterPill
           active={feedFocus === "priority"}
           onClick={() =>
@@ -419,20 +355,12 @@ export function TodayView() {
             Priority
           </span>
         </FilterPill>
-        {chaseCount > 0 && (
-          <Link
-            to="/follow-ups"
-            className="text-muted ml-auto text-[11px] font-medium"
-          >
-            All threads
-          </Link>
-        )}
       </div>
 
       {fullFeed.length === 0 && eventDeadlineCount === 0 ? (
         <EmptyState
           title="Nothing scheduled"
-          description="Type a plan above to add it to your calendar"
+          description="Anything you add lands here, sorted by when it matters"
         />
       ) : feed.length === 0 ? (
         <EmptyState
@@ -468,7 +396,7 @@ export function TodayView() {
           {feed.length === 0 ? (
             <EmptyState
               title="No nudges right now"
-              description="Threads will resurface here when they need follow-through"
+              description="Follow-ups show up here when it's time to ping someone"
             />
           ) : (
             <div className="item-list">
@@ -506,23 +434,14 @@ export function TodayView() {
         </div>
       )}
 
-      {(showForm || editItem) && (
+      {editItem && (
         <ItemForm
           categories={categories}
           item={editItem}
-          onClose={() => {
-            setShowForm(false);
-            setEditItem(null);
-          }}
+          onClose={() => setEditItem(null)}
           onSave={async (data) => {
             try {
-              if (editItem) await updateItem(editItem.id, data);
-              else {
-                const created = await addItem(data);
-                if (created.categoryId) setLastCategoryId(created.categoryId);
-                toast("Task added", { kind: "success" });
-              }
-              setShowForm(false);
+              await updateItem(editItem.id, data);
               setEditItem(null);
             } catch (err) {
               actionError(err);

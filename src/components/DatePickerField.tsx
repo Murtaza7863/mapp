@@ -112,9 +112,9 @@ export function DatePickerField({
                   onClick={() => pick(day)}
                   className={`aspect-square rounded-lg text-sm transition-colors ${
                     selected
-                      ? "bg-[#ff7a59] font-semibold text-[#1a0f0a]"
+                      ? "bg-block text-white font-semibold"
                       : today
-                        ? "text-primary ring-1 ring-[#ff7a59]/40"
+                        ? "text-primary ring-block/45 font-semibold ring-1"
                         : inMonth
                           ? "text-primary hover:bg-[#f0f2f5]"
                           : "text-muted hover:bg-[#f0f2f5]"

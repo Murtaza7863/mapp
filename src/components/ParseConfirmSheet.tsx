@@ -16,7 +16,6 @@ interface Props {
   actions: ProposedFeatureAction[];
   clarifications: string[];
   source: "llm" | "rules";
-  modelLabel?: string | null;
   categories: Category[];
   onChangeItems: (items: ProposedItem[]) => void;
   onChangeActions: (actions: ProposedFeatureAction[]) => void;
@@ -36,7 +35,6 @@ export function ParseConfirmSheet({
   actions,
   clarifications,
   source,
-  modelLabel,
   categories,
   onChangeItems,
   onChangeActions,
@@ -95,19 +93,14 @@ export function ParseConfirmSheet({
                 <h3 className="text-primary text-lg font-semibold">
                   Check before adding
                 </h3>
-                {source === "llm" && modelLabel && !refining && (
-                  <span className="ai-confirm-badge">
-                    {modelLabel} · on-device
-                  </span>
+                {source === "llm" && !refining && (
+                  <span className="ai-confirm-badge">On-device</span>
                 )}
               </div>
               <p className="text-muted mt-1 text-xs">
                 {refining
-                  ? "Refining with on-device AI…"
-                  : source === "llm"
-                    ? "Parsed on your device."
-                    : "Quick parse."}{" "}
-                Edit anything that looks off.
+                  ? "Refining on-device…"
+                  : "Edit anything that looks off."}
               </p>
             </div>
             <button
@@ -255,13 +248,14 @@ export function ParseConfirmSheet({
                       placeholder="Due date (optional)"
                       className="text-xs"
                     />
-                    <div className="text-muted flex flex-wrap gap-2 text-[11px]">
-                      <span>{ITEM_TYPE_LABELS[item.type]}</span>
-                      {item.priority && <span>priority</span>}
-                      {item.parentFolderName && (
-                        <span>in {item.parentFolderName}</span>
-                      )}
-                    </div>
+                    {(item.priority || item.parentFolderName) && (
+                      <div className="text-muted flex flex-wrap gap-2 text-[11px]">
+                        {item.priority && <span>Priority</span>}
+                        {item.parentFolderName && (
+                          <span>in {item.parentFolderName}</span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

@@ -1,9 +1,10 @@
 import { formatDistanceToNow, parseISO } from "date-fns";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
 import { PageHeader } from "../components/ui";
-import { isPushConfigured } from "../config";
+import { APP_NAME, isPushConfigured } from "../config";
 import { db, updateSettings } from "../db";
 import { useCategories } from "../hooks/useCategories";
 import { useToast } from "../hooks/useToast";
@@ -23,7 +24,7 @@ import {
   runAutoBackup,
   storageSummary,
 } from "../lib/persistence";
-import { isIos, isStandalone } from "../lib/pwa";
+import { isIos, isStandalone, pushBlockReason } from "../lib/pwa";
 import { REMINDER_OFFSET_OPTIONS } from "../types";
 
 export function SettingsView() {
@@ -79,7 +80,7 @@ export function SettingsView() {
       const data = await exportDataForCategory(categoryId);
       await downloadJson(
         data,
-        `mapp-${name.toLowerCase()}-${new Date().toISOString().slice(0, 10)}.json`,
+        `plotline-${name.toLowerCase()}-${new Date().toISOString().slice(0, 10)}.json`,
       );
       showStatus(`Exported ${name}`);
     } catch (err) {
@@ -92,7 +93,7 @@ export function SettingsView() {
       const data = await exportData();
       await downloadJson(
         data,
-        `mapp-backup-${new Date().toISOString().slice(0, 10)}.json`,
+        `plotline-backup-${new Date().toISOString().slice(0, 10)}.json`,
       );
       await updateSettings({ lastManualBackupAt: new Date().toISOString() });
       showStatus("Export ready");
@@ -147,7 +148,7 @@ export function SettingsView() {
         <dl className="text-muted space-y-2 text-sm">
           <div className="flex justify-between gap-4">
             <dt>Home Screen app</dt>
-            <dd className={installed ? "text-emerald-400" : "text-amber-400"}>
+            <dd className={installed ? "text-emerald-600" : "text-warn"}>
               {installed ? "Installed" : "Not installed"}
             </dd>
           </div>
@@ -163,8 +164,9 @@ export function SettingsView() {
       <section className="glass-card mb-6 rounded-2xl p-4">
         <h2 className="mb-3 font-semibold">Notifications</h2>
         {!pushConfigured && (
-          <p className="text-amber-400/90 mb-3 text-sm">
-            Set VITE_PUSH_API_URL and VITE_VAPID_PUBLIC_KEY when deploying.
+          <p className="text-warn mb-3 text-sm">
+            Reminders are off on this build. Everything else works offline;
+            setup steps are in the README.
           </p>
         )}
         <dl className="text-muted mb-4 space-y-2 text-sm">
@@ -182,11 +184,16 @@ export function SettingsView() {
         <button
           type="button"
           onClick={handleEnablePush}
-          disabled={!pushConfigured}
+          disabled={!pushConfigured || Boolean(pushBlockReason())}
           className="btn-primary mb-2 w-full rounded-xl py-3 disabled:opacity-40"
         >
           Enable notifications
         </button>
+        {pushConfigured && pushBlockReason() && (
+          <p className="text-muted mb-2 text-xs leading-relaxed">
+            {pushBlockReason()}
+          </p>
+        )}
         {settings?.notificationsEnabled && (
           <button
             type="button"
@@ -205,9 +212,7 @@ export function SettingsView() {
           Sync schedule now
         </button>
         {settings?.lastSyncError && (
-          <p className="text-red-400/90 mb-3 text-xs">
-            {settings.lastSyncError}
-          </p>
+          <p className="text-danger mb-3 text-xs">{settings.lastSyncError}</p>
         )}
 
         <label className="flex items-center justify-between py-2">
@@ -407,13 +412,23 @@ export function SettingsView() {
           />
         </label>
         {importError && (
-          <p className="text-red-400 mt-2 text-sm">{importError}</p>
+          <p className="text-danger mt-2 text-sm">{importError}</p>
         )}
       </section>
 
       <section className="item-card text-muted rounded-xl p-4 text-sm">
         <h2 className="text-primary mb-2 font-semibold">About</h2>
-        <p>Local storage only. Data stays on this device.</p>
+        <p>
+          {APP_NAME} stores everything on this device. Nothing is uploaded to a
+          cloud account.
+        </p>
+        <p className="mt-2">
+          <Link to="/guide" className="text-block font-medium">
+            How it works
+          </Link>
+          {" · "}
+          tips for capture, dates, and avoiding parse frustration.
+        </p>
         <p className="mt-2">Device ID: {settings?.deviceId?.slice(0, 8)}…</p>
       </section>
     </div>

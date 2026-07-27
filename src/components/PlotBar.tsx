@@ -3,12 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import type { ParseDumpResult } from "../lib/brain-dump/types";
 import type { Category } from "../types";
 
-import {
-  checkWebGPU,
-  friendlyModelLabel,
-  getLoadedPlotModelId,
-  warmupPlotEngine,
-} from "../lib/brain-dump/llm-engine";
+import { checkWebGPU, warmupPlotEngine } from "../lib/brain-dump/llm-engine";
 import {
   parseRulesDump,
   refineDumpWithLlm,
@@ -19,8 +14,6 @@ import { isSpeechRecognitionSupported, listenForSpeech } from "../lib/speech";
 import { MicIcon } from "./icons";
 import { OnDeviceAiBadge } from "./OnDeviceAiBadge";
 import { ParseConfirmSheet } from "./ParseConfirmSheet";
-import { PlotDemoChips } from "./PlotDemoChips";
-import { ResolveStrip } from "./ResolveStrip";
 
 interface Props {
   categories: Category[];
@@ -33,9 +26,9 @@ type Phase = "idle" | "loading" | "confirm";
 function modelStatusText(report: { text?: string; progress?: number }): string {
   if (report.text?.trim()) return report.text.trim();
   if (typeof report.progress === "number" && report.progress > 0) {
-    return `Loading AI model… ${Math.round(report.progress * 100)}%`;
+    return `Loading model… ${Math.round(report.progress * 100)}%`;
   }
-  return "Loading AI model…";
+  return "Loading model…";
 }
 
 export function PlotBar({ categories, onParsed, initialText }: Props) {
@@ -50,7 +43,6 @@ export function PlotBar({ categories, onParsed, initialText }: Props) {
   const [saving, setSaving] = useState(false);
   const [showSpinner, setShowSpinner] = useState(false);
   const [listening, setListening] = useState(false);
-  const [modelLabel, setModelLabel] = useState<string | null>(null);
   const userEditedRef = useRef(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const stopListenRef = useRef<(() => void) | null>(null);
@@ -126,8 +118,8 @@ export function PlotBar({ categories, onParsed, initialText }: Props) {
     return () => window.clearTimeout(timer);
   }, [barBusy]);
 
-  const runPlot = async (textOverride?: string) => {
-    const trimmed = (textOverride ?? value).trim();
+  const runPlot = async () => {
+    const trimmed = value.trim();
     if (!trimmed || barBusy || saving) return;
 
     setError(null);
@@ -151,7 +143,7 @@ export function PlotBar({ categories, onParsed, initialText }: Props) {
       setExpanded(false);
     } else if (needsLlm) {
       setPhase("loading");
-      setStatusText("Loading AI model…");
+      setStatusText("Loading model…");
     } else {
       setError("Nothing found — try a task with a day or time.");
       return;
@@ -169,8 +161,6 @@ export function PlotBar({ categories, onParsed, initialText }: Props) {
           setStatusText(modelStatusText(report));
         },
       );
-
-      setModelLabel(friendlyModelLabel(getLoadedPlotModelId()));
 
       if (!hasRules) {
         if (
@@ -229,23 +219,12 @@ export function PlotBar({ categories, onParsed, initialText }: Props) {
     }
   };
 
-  const tryDemo = (text: string) => {
-    setValue(text);
-    setExpanded(true);
-    void runPlot(text);
-  };
-
   return (
     <>
-      <section className="capture-hero" aria-label="Add to calendar">
+      <section className="capture-hero" aria-label="Add">
         <div className="capture-hero-header">
           <OnDeviceAiBadge />
         </div>
-
-        <PlotDemoChips
-          onSelect={tryDemo}
-          disabled={barBusy || saving || listening}
-        />
 
         <div className="compose-bar-wrap">
           <div
@@ -261,13 +240,9 @@ export function PlotBar({ categories, onParsed, initialText }: Props) {
               }}
               onFocus={() => setExpanded(true)}
               onKeyDown={onKeyDown}
-              placeholder={
-                listening
-                  ? "Listening…"
-                  : "Dentist Tuesday 3pm, email Jake Friday…"
-              }
+              placeholder={listening ? "Listening…" : "What's on your mind?"}
               className="compose-bar-input"
-              aria-label="Type a plan to add to calendar"
+              aria-label="Add a task"
               disabled={barBusy || saving}
             />
             <div className="compose-bar-actions">
@@ -296,27 +271,17 @@ export function PlotBar({ categories, onParsed, initialText }: Props) {
                 onClick={() => void runPlot()}
                 disabled={!canSubmit}
                 className="compose-bar-go"
-                aria-label="Add to calendar"
+                aria-label="Add"
               >
-                {showSpinner ? (
-                  <span className="compose-bar-spinner" />
-                ) : (
-                  "Add to calendar"
-                )}
+                {showSpinner ? <span className="compose-bar-spinner" /> : "Add"}
               </button>
             </div>
           </div>
           {statusText && barBusy && (
             <p className="compose-bar-status">{statusText}</p>
           )}
-          {listening && (
-            <p className="compose-bar-status compose-bar-listening-label">
-              Voice → Plot · on-device
-            </p>
-          )}
           {error && <p className="compose-bar-error">{error}</p>}
         </div>
-        <ResolveStrip text={value} categories={categories} />
       </section>
 
       {phase === "confirm" && result && (
@@ -326,7 +291,6 @@ export function PlotBar({ categories, onParsed, initialText }: Props) {
           actions={result.actions}
           clarifications={result.clarifications}
           source={result.source}
-          modelLabel={modelLabel}
           categories={categories}
           refining={refining}
           saving={saving}

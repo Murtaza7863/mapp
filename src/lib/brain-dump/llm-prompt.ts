@@ -6,10 +6,13 @@ import type { ProposedItem } from "./types";
 const FEW_SHOT = `Examples (today: 2026-07-26):
 
 Input: "email prof about extension tomorrow #work"
-Output item: { title: "Email prof about extension", type: "follow-up", categoryHint: "Work", dueAt: "2026-07-27T13:00:00.000Z", priority: false, contactName: "Prof" }
+Output item: { title: "Email prof about extension", type: "deadline", categoryHint: "Work", dueAt: "2026-07-27T13:00:00.000Z", priority: false }
 
 Input: "just finished call with acme corp, follow up with them by next friday for ATLAS"
 Output item: { title: "Follow up — Acme Corp", type: "follow-up", categoryHint: "ATLAS", dueAt: "2026-08-01T13:00:00.000Z", priority: false, contactName: "Acme Corp" }
+
+Input: "email jake"
+Output item: { title: "Email jake", type: "follow-up", priority: false, contactName: "Jake" }
 
 Input: "pay rent tomorrow !, gym friday #personal"
 Output items: [

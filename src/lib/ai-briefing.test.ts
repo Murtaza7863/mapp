@@ -11,6 +11,7 @@ describe("fetchAiBriefing", () => {
   const briefing: DailyBriefing = {
     overdue: 2,
     dueToday: 1,
+    upcoming: 0,
     needsNudge: 3,
     urgentPrep: 0,
     snoozed: 0,

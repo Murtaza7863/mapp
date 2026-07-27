@@ -55,7 +55,7 @@ export function chaseReason(item: Item, now = new Date()): string {
     return "Time to look back on this";
   }
   if (item.pipelineStage === "my_turn") {
-    return item.nextAction?.trim() || "Your move on this thread";
+    return item.nextAction?.trim() || "Your move on this follow-up";
   }
   if (item.pipelineStage === "scheduling") {
     return "Scheduling went quiet — follow up";

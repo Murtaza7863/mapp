@@ -1,7 +1,15 @@
 import { useEffect, useState } from "react";
 
+import { APP_NAME } from "../config";
 import { CloseIcon } from "./icons";
 
+const DISMISS_KEY = "install-prompt-dismissed";
+const VISITS_KEY = "install-prompt-visits";
+
+/**
+ * Soft install tip for iOS Safari. Skips the first open so Plot gets the
+ * spotlight, then shows a one-line banner until dismissed.
+ */
 export function InstallPrompt() {
   const [show, setShow] = useState(false);
 
@@ -11,34 +19,33 @@ export function InstallPrompt() {
       window.matchMedia("(display-mode: standalone)").matches ||
       ("standalone" in navigator &&
         (navigator as { standalone?: boolean }).standalone);
-    const dismissed = localStorage.getItem("install-prompt-dismissed");
-    setShow(ios && !standalone && !dismissed);
+    if (!ios || standalone) return;
+    if (localStorage.getItem(DISMISS_KEY)) return;
+
+    const visits = Number(localStorage.getItem(VISITS_KEY) ?? "0") + 1;
+    localStorage.setItem(VISITS_KEY, String(visits));
+    setShow(visits >= 2);
   }, []);
 
   if (!show) return null;
 
   return (
-    <div className="glass-card overflow-hidden rounded-lg border-l-2 border-l-mark">
-      <div className="p-4">
-        <div className="mb-2 flex items-start justify-between gap-2">
-          <p className="text-primary text-sm font-semibold">Install mApp</p>
-          <button
-            type="button"
-            onClick={() => {
-              localStorage.setItem("install-prompt-dismissed", "1");
-              setShow(false);
-            }}
-            className="text-muted hover:text-muted transition-colors"
-            aria-label="Dismiss"
-          >
-            <CloseIcon className="h-4 w-4" />
-          </button>
-        </div>
-        <p className="text-muted text-xs leading-relaxed">
-          Safari: Share → Add to Home Screen to install mApp. Required for
-          notifications on iPhone.
-        </p>
-      </div>
+    <div className="border-rule bg-surface mb-3 flex items-start gap-2 rounded-xl border px-3 py-2.5">
+      <p className="text-muted min-w-0 flex-1 text-xs leading-relaxed">
+        <span className="text-primary font-medium">Install {APP_NAME}.</span>{" "}
+        Safari → Share → Add to Home Screen. Needed for notifications.
+      </p>
+      <button
+        type="button"
+        onClick={() => {
+          localStorage.setItem(DISMISS_KEY, "1");
+          setShow(false);
+        }}
+        className="text-muted shrink-0 p-0.5"
+        aria-label="Dismiss"
+      >
+        <CloseIcon className="h-3.5 w-3.5" />
+      </button>
     </div>
   );
 }

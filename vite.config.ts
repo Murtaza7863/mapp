@@ -28,12 +28,12 @@ export default defineConfig({
         "pwa-512.png",
       ],
       manifest: {
-        name: "mApp",
-        short_name: "mApp",
+        name: "Plotline",
+        short_name: "Plotline",
         description:
-          "A new way to stay organised — map tasks, threads, and routines in one mobile app.",
-        theme_color: "#070708",
-        background_color: "#070708",
+          "Plot your day in plain English. Offline planner for areas, deadlines, and tasks.",
+        theme_color: "#F8F9FB",
+        background_color: "#F8F9FB",
         display: "standalone",
         orientation: "portrait",
         start_url: "/",

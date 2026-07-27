@@ -223,14 +223,14 @@ export interface AiInsightRequest {
   topTasks: string[];
 }
 
-const BRIEFING_SYSTEM = `You are a concise planner on a user's phone. Write ONE short sentence (max 35 words) of specific, actionable advice based on their task stats. No greetings, no bullet points, no markdown.`;
+const BRIEFING_SYSTEM = `You are a concise planner on a user's phone. Write ONE short sentence (max 35 words) of specific, actionable advice based on their task stats. Focus on what to tackle next. Do not suggest scheduling time blocks or calendar slots. No greetings, no bullet points, no markdown.`;
 
 export async function generateAiInsight(
   request: AiInsightRequest,
 ): Promise<string> {
   const engine = await loadPlotEngine();
   const { briefing, topTasks } = request;
-  const user = `Stats: ${briefing.dueToday} due today, ${briefing.overdue} overdue, ${briefing.needsNudge} threads to nudge, ${briefing.urgentPrep} event prep deadlines.
+  const user = `Stats: ${briefing.dueToday} due today, ${briefing.overdue} overdue, ${briefing.needsNudge} follow-ups to nudge, ${briefing.urgentPrep} event prep deadlines.
 Top tasks: ${topTasks.length > 0 ? topTasks.join("; ") : "none"}.
 One sentence of advice:`;
 

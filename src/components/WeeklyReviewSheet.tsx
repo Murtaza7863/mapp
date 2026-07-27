@@ -14,7 +14,7 @@ export function WeeklyReviewSheet({ review, onClose }: Props) {
       onClick={onClose}
     >
       <div
-        className="modal-sheet max-h-[80dvh] w-full overflow-y-auto rounded-t-3xl p-5 pb-8"
+        className="modal-sheet max-h-[80dvh] w-full overflow-y-auto rounded-t-3xl p-5 pb-[calc(2rem+env(safe-area-inset-bottom))]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="modal-accent-bar mb-4 rounded-t-3xl" />
@@ -43,7 +43,7 @@ export function WeeklyReviewSheet({ review, onClose }: Props) {
                 <Link
                   to="/?focus=chase"
                   onClick={onClose}
-                  className="text-violet-300 mt-2 inline-block text-xs font-medium"
+                  className="text-block mt-2 inline-block text-xs font-medium"
                 >
                   Work nudges →
                 </Link>
@@ -52,7 +52,7 @@ export function WeeklyReviewSheet({ review, onClose }: Props) {
                 <Link
                   to="/?focus=prep"
                   onClick={onClose}
-                  className="text-violet-300 mt-2 inline-block text-xs font-medium"
+                  className="text-block mt-2 inline-block text-xs font-medium"
                 >
                   See prep deadlines →
                 </Link>
@@ -61,7 +61,7 @@ export function WeeklyReviewSheet({ review, onClose }: Props) {
                 <Link
                   to="/?focus=overdue"
                   onClick={onClose}
-                  className="text-violet-300 mt-2 inline-block text-xs font-medium"
+                  className="text-block mt-2 inline-block text-xs font-medium"
                 >
                   Tackle overdue →
                 </Link>

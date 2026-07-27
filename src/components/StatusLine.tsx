@@ -1,12 +1,10 @@
 import { Link } from "react-router-dom";
 
-import type { DailyBriefing } from "../lib/briefing";
 import type { FeedFocus } from "../lib/feed";
 import type { MomentumSummary } from "../lib/momentum";
 import type { TodaySummary } from "../lib/stats";
 
 interface Props {
-  briefing: DailyBriefing;
   summary: TodaySummary;
   momentum: MomentumSummary;
   focus?: FeedFocus | null;
@@ -17,11 +15,14 @@ interface Props {
 }
 
 function Sep() {
-  return <span className="status-line-sep" aria-hidden>·</span>;
+  return (
+    <span className="status-line-sep" aria-hidden>
+      ·
+    </span>
+  );
 }
 
 export function StatusLine({
-  briefing,
   summary,
   momentum,
   focus = null,
@@ -74,7 +75,9 @@ export function StatusLine({
   if (summary.triage > 0 && onTriage) {
     items.push(
       <button key="triage" type="button" onClick={onTriage}>
-        {summary.triage} need a date
+        {summary.triage === 1
+          ? "1 needs a date"
+          : `${summary.triage} need a date`}
       </button>,
     );
   }
@@ -95,23 +98,28 @@ export function StatusLine({
   const streak =
     momentum.streakDays > 1 ? `${momentum.streakDays}-day streak` : null;
 
+  // With nothing to count this strip would just echo the briefing headline.
+  const hasContent =
+    items.length > 0 ||
+    summary.openThreads > 0 ||
+    streak !== null ||
+    Boolean(showWrapUp && onWrapUp);
+  if (!hasContent) return null;
+
   return (
     <div className="status-line">
-      {items.length === 0 ? (
-        <span>{briefing.headline}</span>
-      ) : (
-        items.map((node, i) => (
-          <span key={i} className="inline-flex items-center gap-2">
-            {i > 0 && <Sep />}
-            {node}
-          </span>
-        ))
-      )}
+      {items.map((node, i) => (
+        <span key={i} className="inline-flex items-center gap-2">
+          {i > 0 && <Sep />}
+          {node}
+        </span>
+      ))}
       {summary.openThreads > 0 && (
         <>
           {items.length > 0 && <Sep />}
           <Link to="/follow-ups">
-            {summary.openThreads} open thread{summary.openThreads === 1 ? "" : "s"}
+            {summary.openThreads} follow-up
+            {summary.openThreads === 1 ? "" : "s"}
           </Link>
         </>
       )}

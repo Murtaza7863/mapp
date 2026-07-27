@@ -55,7 +55,7 @@ export function buildWeeklyReview(
   const sections: WeeklyReviewSection[] = [
     {
       id: "stale",
-      title: "Stale threads",
+      title: "Quiet follow-ups",
       description: "No contact in a while — send a bump or revisit",
       count: stale.length,
       itemIds: stale.map((i) => i.id),
@@ -77,7 +77,7 @@ export function buildWeeklyReview(
     {
       id: "prep",
       title: "Event prep due soon",
-      description: "Threads with upcoming prep deadlines",
+      description: "Follow-ups with upcoming prep deadlines",
       count: prepIds.length,
       itemIds: prepIds,
     },

@@ -7,7 +7,7 @@ import {
   deadlineUrgency,
   formatDeadlineDate,
 } from "../lib/event-deadlines";
-import { MountainIcon } from "./icons";
+import { CalendarIcon } from "./icons";
 
 interface Props {
   items: Item[];
@@ -27,8 +27,8 @@ export function EventDeadlinesSection({ items, onSelect, compact }: Props) {
   return (
     <section className="section-block">
       <div className="mb-2 flex items-center justify-between">
-        <div className="text-violet-300 flex items-center gap-2 text-sm font-semibold">
-          <MountainIcon className="h-4 w-4" />
+        <div className="text-block flex items-center gap-2 text-sm font-semibold">
+          <CalendarIcon className="h-4 w-4" />
           Event prep deadlines
         </div>
         {(!compact || entries.length > 3) && (
@@ -38,7 +38,7 @@ export function EventDeadlinesSection({ items, onSelect, compact }: Props) {
         )}
       </div>
       {urgent.length > 0 && (
-        <p className="text-amber-400/90 mb-2 text-[11px]">
+        <p className="text-warn mb-2 text-[11px]">
           {urgent.length} prep deadline{urgent.length === 1 ? "" : "s"} within a
           week
         </p>
@@ -66,9 +66,9 @@ export function EventDeadlinesSection({ items, onSelect, compact }: Props) {
                 <span
                   className={`shrink-0 text-[11px] font-medium tabular-nums ${
                     urgency === "high"
-                      ? "text-red-400"
+                      ? "text-danger"
                       : urgency === "medium"
-                        ? "text-amber-400"
+                        ? "text-warn"
                         : "text-muted"
                   }`}
                 >

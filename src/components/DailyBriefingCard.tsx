@@ -1,5 +1,3 @@
-import { Link } from "react-router-dom";
-
 import type { DailyBriefing } from "../lib/briefing";
 
 interface Props {
@@ -24,7 +22,7 @@ export function DailyBriefingCard({
 
   return (
     <section className="daily-briefing mb-4 rounded-2xl p-4">
-      <p className="text-primary text-[15px] font-semibold leading-snug">
+      <p className="text-primary text-[15px] leading-snug font-semibold">
         {headline}
       </p>
       <p className="text-muted mt-1 text-xs">{subline}</p>
@@ -36,7 +34,7 @@ export function DailyBriefingCard({
               onClick={onFocusNudge}
               className="daily-briefing-action"
             >
-              Work nudges
+              See nudges
             </button>
           )}
           {urgentPrep > 0 && onFocusPrep && (
@@ -56,11 +54,6 @@ export function DailyBriefingCard({
             >
               See overdue
             </button>
-          )}
-          {needsNudge > 0 && (
-            <Link to="/follow-ups?nudge=1" className="daily-briefing-action">
-              All threads
-            </Link>
           )}
           {showWrapUp && onWrapUp && (
             <button

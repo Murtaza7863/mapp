@@ -1,9 +1,9 @@
 /** Central app configuration — single source for env and feature flags. */
 
-export const APP_NAME = "mApp";
-export const APP_TAGLINE = "A new way to stay organised.";
+export const APP_NAME = "Plotline";
+export const APP_TAGLINE = "Plot your day in plain English.";
 export const APP_DESCRIPTION =
-  "Offline-first command center for areas, threads, routines, and natural-language Plot.";
+  "Offline planner for areas, deadlines, and natural-language capture. Your data stays on your device.";
 
 const env = import.meta.env;
 

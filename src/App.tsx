@@ -15,6 +15,7 @@ import { CategoryView } from "./views/CategoryView";
 import { ContainerDetailView } from "./views/ContainerDetailView";
 import { EventDeadlinesView } from "./views/EventDeadlinesView";
 import { FollowUpsView } from "./views/FollowUpsView";
+import { GuideView } from "./views/GuideView";
 import { HistoryView } from "./views/HistoryView";
 import { InsightsView } from "./views/InsightsView";
 import { NotesView } from "./views/NotesView";
@@ -51,6 +52,7 @@ function AppRoutes() {
         <Route path="notes" element={<NotesView />} />
         <Route path="history" element={<HistoryView />} />
         <Route path="insights" element={<InsightsView />} />
+        <Route path="guide" element={<GuideView />} />
         <Route path="settings" element={<SettingsView />} />
       </Route>
     </Routes>

@@ -4,7 +4,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import type { Item, PipelineStage } from "../types";
 
 import { CategoryIcon } from "../components/CategoryIcon";
-import { ClockIcon } from "../components/icons";
+import { ReplyIcon } from "../components/icons";
 import { ItemForm, SnoozeSheet } from "../components/ItemForm";
 import { SwipeItem } from "../components/SwipeItem";
 import { ThreadActions } from "../components/ThreadActions";
@@ -54,7 +54,7 @@ export function FollowUpsView() {
   const [staleOnly, setStaleOnly] = useState(false);
   const [nudgeOnly, setNudgeOnly] = useState(false);
 
-  const threads = useMemo(() => {
+  const followUps = useMemo(() => {
     let list = items.filter(
       (i) => i.type === "follow-up" && i.status !== "done",
     );
@@ -67,11 +67,10 @@ export function FollowUpsView() {
   }, [items, areaFilter, staleOnly, nudgeOnly]);
 
   const byStage = useMemo(() => {
-    const map = groupFollowUpsByStage(threads);
-    return map;
-  }, [threads]);
+    return groupFollowUpsByStage(followUps);
+  }, [followUps]);
 
-  const total = threads.length;
+  const total = followUps.length;
   const nudgeCount = useMemo(
     () =>
       items.filter(
@@ -125,14 +124,14 @@ export function FollowUpsView() {
   return (
     <div className="view-page">
       <PageHeader
-        title="Threads"
-        subtitle="Outreach, waiting, revisit later"
+        title="Follow-ups"
+        subtitle="People you're waiting on or need to ping"
         action={
           <div className="flex shrink-0 gap-2">
             {nudgeCount > 0 && (
               <Link
                 to="/?focus=chase"
-                className="border-violet-500/30 text-violet-300 min-h-[44px] rounded-lg border px-3 py-2 text-sm"
+                className="border-rule text-block min-h-[44px] rounded-lg border px-3 py-2 text-sm"
               >
                 Nudge ({nudgeCount})
               </Link>
@@ -170,31 +169,40 @@ export function FollowUpsView() {
       </div>
 
       <div className="mb-4 flex flex-wrap gap-2">
-        <FilterPill active={!staleOnly && !nudgeOnly} onClick={() => {
-          setStaleOnly(false);
-          setNudgeOnly(false);
-        }}>
-          All threads
+        <FilterPill
+          active={!staleOnly && !nudgeOnly}
+          onClick={() => {
+            setStaleOnly(false);
+            setNudgeOnly(false);
+          }}
+        >
+          All
         </FilterPill>
-        <FilterPill active={nudgeOnly} onClick={() => {
-          setNudgeOnly(true);
-          setStaleOnly(false);
-        }}>
+        <FilterPill
+          active={nudgeOnly}
+          onClick={() => {
+            setNudgeOnly(true);
+            setStaleOnly(false);
+          }}
+        >
           Need nudge ({nudgeCount})
         </FilterPill>
-        <FilterPill active={staleOnly} onClick={() => {
-          setStaleOnly(true);
-          setNudgeOnly(false);
-        }}>
-          Stale ({staleCount})
+        <FilterPill
+          active={staleOnly}
+          onClick={() => {
+            setStaleOnly(true);
+            setNudgeOnly(false);
+          }}
+        >
+          Quiet too long ({staleCount})
         </FilterPill>
       </div>
 
       {total === 0 ? (
         <EmptyState
-          icon={<ClockIcon className="h-5 w-5" />}
-          title={staleOnly ? "No stale threads" : "No open threads"}
-          description="Track follow-up threads, outreach, and look-back-later items"
+          icon={<ReplyIcon className="h-5 w-5" />}
+          title={staleOnly ? "Nothing quiet too long" : "No follow-ups"}
+          description="Optional. Capture a person you need to ping, or skip this and stick to dated tasks."
         />
       ) : (
         STAGE_ORDER.map((stage) => {

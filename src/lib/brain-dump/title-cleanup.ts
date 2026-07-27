@@ -3,11 +3,23 @@ import type { ItemType } from "../../types";
 const FILLER_PREFIX =
   /^(?:need to|remember to|remind me(?:\s+that)?(?:\s+I)?(?:\s+promised)?|don't forget(?:\s+to)?|dont forget(?:\s+to)?|have to|gotta|should|also|maybe|probably|I'?ve been putting this off forever but I really really need to|I really need to|I need to)\s+/i;
 
-const STRAY_DATE_TOKENS =
-  /\b(?:tomorrow|today|tonight|tmrw|tmr|next week|next monday|next tuesday|next wednesday|next thursday|next friday|next saturday|next sunday)\b/gi;
+/** Safe bare weekdays. Excludes "sat" and "sun", which are also real words. */
+const WEEKDAY_SAFE =
+  "monday|tuesday|wednesday|thursday|friday|saturday|sunday|tues|tue|weds|wed|thurs|thur|thu|fri|mon";
+const WEEKDAY_ANY = `${WEEKDAY_SAFE}|sat|sun`;
 
-const STRAY_WEEKDAY =
-  /\b(?:on\s+)?(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun)\b/gi;
+const STRAY_DATE_TOKENS = new RegExp(
+  `\\b(?:tomorrow|today|tonight|tmrw|tmr|this weekend|next week|next month|end of (?:the )?week|next\\s+(?:${WEEKDAY_ANY}))\\b`,
+  "gi",
+);
+
+/** Weekdays after a cue word are definitely dates, even the ambiguous ones. */
+const STRAY_WEEKDAY_CUED = new RegExp(
+  `\\b(?:on|by|due|this)\\s+(?:${WEEKDAY_ANY})\\b`,
+  "gi",
+);
+
+const STRAY_WEEKDAY = new RegExp(`\\b(?:${WEEKDAY_SAFE})\\b`, "gi");
 
 const TRAILING_TIME = /\s+(?:at\s+)?\d{1,2}(?::\d{2})?\s*(?:am|pm)?\s*$/i;
 
@@ -99,6 +111,7 @@ export function polishTitle(
 
   t = t.replace(FILLER_PREFIX, "");
   t = t.replace(STRAY_DATE_TOKENS, " ");
+  t = t.replace(STRAY_WEEKDAY_CUED, " ");
   t = t.replace(STRAY_WEEKDAY, " ");
   t = t.replace(TRAILING_TIME, "");
   t = t.replace(/\b(?:due|by)\s*$/i, "");
@@ -276,8 +289,11 @@ export function looksLikeTaskSegment(segment: string): boolean {
     return true;
   }
 
+  // "3pm tmrw" is a reminder even though it names no task.
+  if (/\b\d{1,2}(?::\d{2})?\s*(?:am|pm)\b/i.test(s)) return true;
+
   if (
-    /\b(?:tomorrow|today|tonight|monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun)\b/i.test(
+    /\b(?:tomorrow|today|tonight|tmrw|tmr|noon|midnight|next week|next month|this weekend|monday|tuesday|wednesday|thursday|friday|saturday|sunday|tues|tue|weds|thurs|thu|fri|mon|wed|sat|sun)\b/i.test(
       s,
     )
   ) {

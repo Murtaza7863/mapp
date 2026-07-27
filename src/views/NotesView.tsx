@@ -93,7 +93,7 @@ export function NotesView() {
                     e.stopPropagation();
                     deleteWithUndo(note, deleteItem, restoreItem);
                   }}
-                  className="text-muted hover:text-red-400 shrink-0 p-1"
+                  className="text-muted hover:text-danger shrink-0 p-1"
                 >
                   <CloseIcon className="h-4 w-4" />
                 </button>

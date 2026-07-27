@@ -10,7 +10,7 @@ interface Props {
 export function CategoryBadge({ category, size = "sm" }: Props) {
   if (!category) {
     return (
-      <span className="border-white/8 bg-white/5 text-muted inline-flex items-center rounded-full border px-2 py-0.5 text-xs">
+      <span className="border-rule bg-paper text-muted inline-flex items-center rounded-full border px-2 py-0.5 text-xs">
         Uncategorized
       </span>
     );

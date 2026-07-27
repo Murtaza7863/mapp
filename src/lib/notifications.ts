@@ -1,12 +1,8 @@
-import { db } from "../db";
-import { getSettings } from "../db";
+import { db, getSettings } from "../db";
+import { APP_NAME, config, isPushConfigured } from "../config";
 import type { Item } from "../types";
-import { config, isPushConfigured } from "../config";
 import { getNotificationFireTime } from "./dates";
-import {
-  buildEventDeadlineEntries,
-  deadlineUrgency,
-} from "./event-deadlines";
+import { buildEventDeadlineEntries, deadlineUrgency } from "./event-deadlines";
 import { chaseReason, needsChase } from "./pipeline";
 import { canUseWebPush, pushBlockReason } from "./pwa";
 
@@ -64,7 +60,7 @@ export function buildScheduledNotifications(
           id: `${item.id}-checkback`,
           fireAt,
           title: `Look back: ${item.contactName ?? item.title}`,
-          body: item.nextAction ?? "Time to revisit this thread",
+          body: item.nextAction ?? "Time to revisit this follow-up",
           url: `/follow-ups?item=${item.id}`,
         });
       }
@@ -241,7 +237,7 @@ function notificationTitle(item: Item): string {
 function notificationBody(item: Item): string {
   if (item.waitingOn) return `Waiting on: ${item.waitingOn}`;
   if (item.notes) return item.notes.slice(0, 120);
-  return "Open mApp";
+  return `Open ${APP_NAME}`;
 }
 
 /** Next local 9am — used for chase nudge reminders. */

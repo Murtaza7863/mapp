@@ -1,5 +1,6 @@
 import Dexie, { type EntityTable } from "dexie";
 import { v4 as uuidv4 } from "uuid";
+import { APP_NAME } from "../config";
 import type {
   AppSettings,
   Category,
@@ -124,14 +125,32 @@ class RemindersDB extends Dexie {
 export const db = new RemindersDB();
 
 db.on("blocked", () => {
-  console.warn("mApp database blocked — close other tabs with this app open.");
+  console.warn(
+    `${APP_NAME} database blocked — close other tabs with this app open.`,
+  );
 });
 
 db.on("versionchange", () => {
   db.close();
 });
 
-export async function seedDatabase() {
+let seeding: Promise<void> | null = null;
+
+/**
+ * Boot and the first getSettings() call can both land on a cold database. Left
+ * unguarded they each see an empty store and seed it, which duplicates the
+ * default areas and can throw a ConstraintError on the settings row. Sharing
+ * one in-flight promise keeps first launch to a single seed.
+ */
+export function seedDatabase(): Promise<void> {
+  seeding ??= runSeed().catch((err: unknown) => {
+    seeding = null;
+    throw err;
+  });
+  return seeding;
+}
+
+async function runSeed() {
   const categoryCount = await db.categories.count();
   if (categoryCount === 0) {
     await db.categories.bulkAdd(

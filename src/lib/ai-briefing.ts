@@ -89,7 +89,7 @@ function buildRulesInsight(
     briefing.dueToday === 0 &&
     briefing.urgentPrep === 0
   ) {
-    return "You're clear — capture anything on your mind with Plot or voice.";
+    return "You're clear. Add anything that comes up.";
   }
 
   const parts: string[] = [];
@@ -98,7 +98,7 @@ function buildRulesInsight(
   }
   if (briefing.needsNudge > 0) {
     parts.push(
-      `nudge ${briefing.needsNudge} thread${briefing.needsNudge === 1 ? "" : "s"}`,
+      `nudge ${briefing.needsNudge} follow-up${briefing.needsNudge === 1 ? "" : "s"}`,
     );
   }
   if (briefing.dueToday > 0) {

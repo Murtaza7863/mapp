@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import { APP_NAME } from "../config";
 import { seedDatabase } from "../db";
 import {
   requestPersistentStorage,
@@ -49,8 +50,8 @@ export function BootGate({ children }: { children: React.ReactNode }) {
   if (state.status === "loading") {
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center gap-3 px-6 text-center">
-        <div className="border-rule h-8 w-8 animate-spin rounded-full border-2 border-t-mark" />
-        <p className="text-muted text-sm">Loading mApp…</p>
+        <div className="border-rule border-t-mark h-8 w-8 animate-spin rounded-full border-2" />
+        <p className="text-muted text-sm">Loading {APP_NAME}…</p>
       </div>
     );
   }

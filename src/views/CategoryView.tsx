@@ -235,7 +235,7 @@ export function CategoryView() {
             {categories.map((cat) => (
               <div
                 key={cat.id}
-                className="border-white/[0.04] space-y-2 border-b pb-3 last:border-0 last:pb-0"
+                className="border-rule space-y-2 border-b pb-3 last:border-0 last:pb-0"
               >
                 <div className="flex items-center gap-2">
                   <input
@@ -268,7 +268,7 @@ export function CategoryView() {
                         );
                       }
                     }}
-                    className="text-red-400 text-sm"
+                    className="text-danger text-sm"
                   >
                     Delete
                   </button>
@@ -322,7 +322,7 @@ export function CategoryView() {
                 <button
                   type="button"
                   onClick={() => setShowFolderForm(true)}
-                  className="text-sky-400 text-[11px] font-medium"
+                  className="text-block text-[11px] font-medium"
                 >
                   + New
                 </button>

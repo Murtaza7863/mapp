@@ -42,7 +42,7 @@ export function ContainerCard({
             <p className="text-muted mt-0.5 text-[11px]">{subtitle}</p>
           )}
           {exam && (
-            <p className="text-amber-400/90 mt-0.5 text-[11px]">
+            <p className="text-warn mt-0.5 text-[11px]">
               {exam.title} in {exam.days <= 0 ? "today" : `${exam.days}d`}
             </p>
           )}
@@ -56,9 +56,9 @@ export function ContainerCard({
           {progress.label}
         </span>
       </div>
-      <div className="bg-white/5 mt-2.5 h-1.5 overflow-hidden rounded-full">
+      <div className="bg-paper mt-2.5 h-1.5 overflow-hidden rounded-full">
         <div
-          className="bg-sky-500/80 h-full rounded-full transition-all"
+          className="bg-block h-full rounded-full transition-all"
           style={{ width: `${progress.percent}%` }}
         />
       </div>

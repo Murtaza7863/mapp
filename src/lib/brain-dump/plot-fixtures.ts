@@ -72,7 +72,10 @@ export const PLOT_PROMPT_FIXTURES: PlotPromptFixture[] = [
     name: "email prof about extension",
     dump: "email prof about extension tomorrow",
     minItems: 1,
-    assert: (i) => expect(i[0].type).toBe("follow-up"),
+    assert: (i) => {
+      expect(i[0].type).toBe("deadline");
+      expect(i[0].dueAt).toBeTruthy();
+    },
   },
 
   // ── Area creation & tagging ─────────────────────────────────────────
@@ -553,6 +556,7 @@ pay rent tomorrow !`,
     name: "email only",
     dump: "email professor",
     minItems: 1,
+    assert: (i) => expect(i[0].type).toBe("follow-up"),
   },
   {
     name: "pay rent",

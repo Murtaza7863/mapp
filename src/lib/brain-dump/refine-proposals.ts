@@ -44,7 +44,11 @@ function refineProposal(
   const cleaned = stripTypePrefix(taskLine);
   const parseInput = item.structure?.taskText?.trim() || cleaned;
   const parsed = parseQuickAdd(parseInput, categories, now);
-  const inferredType = item.type ?? inferTypeFromLine(taskLine);
+  const inferredType =
+    item.type ??
+    inferTypeFromLine(taskLine, {
+      hasDueAt: Boolean(parsed.dueAt ?? item.dueAt),
+    });
   const type = parsed.type ?? inferredType;
 
   const contactName =

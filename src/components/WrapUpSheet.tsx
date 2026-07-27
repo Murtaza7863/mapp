@@ -21,7 +21,7 @@ export function WrapUpSheet({
       onClick={onClose}
     >
       <div
-        className="modal-sheet w-full rounded-t-3xl p-5 pb-8"
+        className="modal-sheet w-full rounded-t-3xl p-5 pb-[calc(2rem+env(safe-area-inset-bottom))]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="modal-accent-bar mb-4 rounded-t-3xl" />

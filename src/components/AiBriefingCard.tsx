@@ -21,26 +21,20 @@ interface Props {
 export function AiBriefingCard(props: Props) {
   const { items, briefing } = props;
   const [insight, setInsight] = useState<string | null>(null);
-  const [source, setSource] = useState<"ai" | "rules" | "loading">("loading");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
 
     async function load() {
       const ok = await checkWebGPU();
-      if (cancelled) return;
+      if (cancelled || !ok) return;
 
-      if (!ok) {
-        setSource("rules");
-        setInsight(null);
-        return;
-      }
-
-      setSource("loading");
+      setLoading(true);
       const result = await fetchAiBriefing(items, briefing);
       if (cancelled) return;
-      setInsight(result.insight);
-      setSource(result.source);
+      setLoading(false);
+      if (result.source === "ai") setInsight(result.insight);
     }
 
     void load();
@@ -49,23 +43,19 @@ export function AiBriefingCard(props: Props) {
     };
   }, [items, briefing]);
 
-  const showAiLine =
-    source === "ai" && insight
-      ? insight
-      : source === "loading"
-        ? "Reading your day on-device…"
-        : null;
+  const showInsight = loading || insight;
 
   return (
-    <div className="ai-briefing-wrap">
-      {showAiLine && (
+    <div className="briefing-wrap">
+      {showInsight && (
         <div
-          className={`ai-insight ${source === "loading" ? "ai-insight-loading" : ""}`}
+          className={`ai-insight ${loading ? "ai-insight-loading" : ""}`}
           aria-live="polite"
         >
           <SparkIcon className="text-block h-4 w-4 shrink-0" />
-          <p className="text-primary text-sm leading-snug">{showAiLine}</p>
-          {source === "ai" && <span className="ai-insight-tag">AI brief</span>}
+          <p className="text-primary text-sm leading-snug">
+            {loading ? "Reading your day…" : insight}
+          </p>
         </div>
       )}
       <DailyBriefingCard {...props} />

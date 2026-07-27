@@ -7,11 +7,11 @@ interface Props {
 }
 
 const TYPE_STYLES: Record<ItemType, string> = {
-  deadline: "text-amber-300/90 bg-amber-400/10 border-amber-400/20",
-  routine: "text-sky-300/90 bg-sky-400/10 border-sky-400/20",
-  "follow-up": "text-violet-300/90 bg-violet-400/10 border-violet-400/20",
-  note: "text-muted bg-white/5 border-white/10",
-  project: "text-emerald-300/90 bg-emerald-400/10 border-emerald-400/20",
+  deadline: "text-amber-800 bg-amber-50 border-amber-200",
+  routine: "text-sky-800 bg-sky-50 border-sky-200",
+  "follow-up": "text-block bg-sky-50 border-sky-200",
+  note: "text-muted bg-paper border-rule",
+  project: "text-emerald-800 bg-emerald-50 border-emerald-200",
 };
 
 export function TypeBadge({ type }: Props) {

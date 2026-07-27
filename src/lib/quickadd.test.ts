@@ -123,6 +123,99 @@ describe("parseQuickAdd", () => {
     expect(urgent.title).toBe("pay rent");
   });
 
+  it("parses next tues with time and strips date from title", () => {
+    // Monday Jul 27, 2026 — "next tues" should be Tue Jul 28
+    const monday = new Date(2026, 6, 27, 10, 0, 0);
+    const p = parseQuickAdd(
+      "meeting for bia with shopee next tues 4pm",
+      categories,
+      monday,
+    );
+    expect(p.title).toBe("meeting for bia with shopee");
+    const due = new Date(p.dueAt!);
+    expect(due.getDay()).toBe(2);
+    expect(due.getDate()).toBe(28);
+    expect(due.getHours()).toBe(16);
+  });
+
+  it("accepts colloquial weekday abbreviations", () => {
+    const p = parseQuickAdd("standup next weds 9am", categories, NOW);
+    const due = new Date(p.dueAt!);
+    expect(due.getDay()).toBe(3);
+    expect(p.title).toBe("standup");
+  });
+
+  it("does not mistake sat or sun inside real words for weekdays", () => {
+    const sat = parseQuickAdd("study sat exam", categories, NOW);
+    expect(sat.title).toBe("study sat exam");
+    expect(sat.dueAt).toBeUndefined();
+
+    const sun = parseQuickAdd("buy sun hat", categories, NOW);
+    expect(sun.title).toBe("buy sun hat");
+    expect(sun.dueAt).toBeUndefined();
+
+    // A cue word makes the same token unambiguous.
+    const cued = parseQuickAdd("laundry on sat", categories, NOW);
+    expect(new Date(cued.dueAt!).getDay()).toBe(6);
+  });
+
+  it("keeps date-only input instead of dropping it", () => {
+    const p = parseQuickAdd("3pm tmrw", categories, NOW);
+    expect(p.title).toBe("Reminder");
+    const due = new Date(p.dueAt!);
+    expect(due.getDate()).toBe(23);
+    expect(due.getHours()).toBe(15);
+  });
+
+  it("parses calendar dates and rolls past months to next year", () => {
+    const dec = parseQuickAdd("essay due dec 15", categories, NOW);
+    expect(dec.title).toBe("essay");
+    expect(new Date(dec.dueAt!).getMonth()).toBe(11);
+    expect(new Date(dec.dueAt!).getFullYear()).toBe(2026);
+
+    const jan = parseQuickAdd("meeting jan 5", categories, NOW);
+    expect(new Date(jan.dueAt!).getFullYear()).toBe(2027);
+  });
+
+  it("parses weekend, next month, and times of day", () => {
+    const weekend = parseQuickAdd("call mom this weekend", categories, NOW);
+    expect(weekend.title).toBe("call mom");
+    expect(new Date(weekend.dueAt!).getDay()).toBe(6);
+
+    const month = parseQuickAdd("gym next month", categories, NOW);
+    expect(month.title).toBe("gym");
+    expect(new Date(month.dueAt!).getMonth()).toBe(7);
+
+    const noon = parseQuickAdd("lunch at noon", categories, NOW);
+    expect(noon.title).toBe("lunch");
+    expect(new Date(noon.dueAt!).getHours()).toBe(12);
+
+    const morning = parseQuickAdd("gym tomorrow morning", categories, NOW);
+    expect(morning.title).toBe("gym");
+    expect(new Date(morning.dueAt!).getHours()).toBe(9);
+  });
+
+  it("leaves 'morning routine' alone when there is no date", () => {
+    const p = parseQuickAdd("morning routine", categories, NOW);
+    expect(p.title).toBe("morning routine");
+    expect(p.dueAt).toBeUndefined();
+  });
+
+  it("parses relative hours", () => {
+    const p = parseQuickAdd("call back in 2 hours", categories, NOW);
+    expect(p.title).toBe("call back");
+    expect(new Date(p.dueAt!).getHours()).toBe(12);
+  });
+
+  it("keeps dated email as a task, undated email as a follow-up", () => {
+    const dated = parseQuickAdd("email prof tomorrow", categories, NOW);
+    expect(dated.type).not.toBe("follow-up");
+    expect(dated.dueAt).toBeTruthy();
+
+    const open = parseQuickAdd("email professor", categories, NOW);
+    expect(open.type).toBe("follow-up");
+  });
+
   it("parses thread contact and next action", () => {
     const p = parseQuickAdd(
       "follow-up: deck review @Jake → send v2",

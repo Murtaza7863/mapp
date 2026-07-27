@@ -28,8 +28,11 @@ import type {
 } from "./types";
 import { resolveCategoryId } from "./validate";
 
-const FOLLOW_UP_RE =
-  /\b(follow[- ]?up|reach out|email|call|text|bump|waiting on|check in with)\b/i;
+/** Explicit open-loop cues — these are always follow-ups. */
+const EXPLICIT_FOLLOW_UP_RE =
+  /\b(follow[- ]?up|reach out|waiting on|check in with|bump)\b/i;
+/** Soft contact verbs — only follow-ups when there's no date (else a normal task). */
+const SOFT_CONTACT_VERB_RE = /\b(email|call|text)\b/i;
 const ROUTINE_RE =
   /\b(routine|every day|every\s+(?:mon|tue|wed|thu|fri|sat|sun|monday|tuesday|wednesday|thursday|friday|saturday|sunday)|daily|weekly|gym|habit|each morning|each evening)\b/i;
 const NOTE_RE = /^note:\s*/i;
@@ -147,10 +150,17 @@ export function splitDumpLines(text: string): string[] {
   return chunks.length > 0 ? chunks : [line].filter(Boolean);
 }
 
-export function inferTypeFromLine(line: string): ItemType {
+export function inferTypeFromLine(
+  line: string,
+  opts: { hasDueAt?: boolean } = {},
+): ItemType {
   if (NOTE_RE.test(line) || JOT_NOTE_RE.test(line)) return "note";
   if (PROJECT_RE.test(line)) return "project";
-  if (/^fu:\s*/i.test(line) || FOLLOW_UP_RE.test(line)) return "follow-up";
+  if (/^fu:\s*/i.test(line) || EXPLICIT_FOLLOW_UP_RE.test(line)) {
+    return "follow-up";
+  }
+  // "email jake" / "call mom" with no day → open loop. With a day → dated task.
+  if (SOFT_CONTACT_VERB_RE.test(line) && !opts.hasDueAt) return "follow-up";
   if (ROUTINE_RE.test(line)) return "routine";
   return "deadline";
 }
@@ -289,10 +299,12 @@ function lineToProposal(
     return null;
   }
 
-  const inferredType = inferTypeFromLine(taskLine);
   const parsed = parseQuickAdd(parseText, categories, now);
   if (!parsed.title.trim()) return null;
 
+  const inferredType = inferTypeFromLine(taskLine, {
+    hasDueAt: Boolean(parsed.dueAt),
+  });
   const contactName = contextContact ?? extractContact(parseText);
   const type = parsed.type ?? inferredType;
   const categoryNames = categories.map((c) => c.name);

@@ -19,7 +19,7 @@ export function TriageSession({ items, onSchedule, onDelete, onClose }: Props) {
         onClick={onClose}
       >
         <div
-          className="modal-sheet w-full rounded-t-3xl p-5 pb-8 text-center"
+          className="modal-sheet w-full rounded-t-3xl p-5 pb-[calc(2rem+env(safe-area-inset-bottom))] text-center"
           onClick={(e) => e.stopPropagation()}
         >
           <p className="text-primary text-lg font-semibold">Inbox zero</p>
@@ -47,7 +47,7 @@ export function TriageSession({ items, onSchedule, onDelete, onClose }: Props) {
       onClick={onClose}
     >
       <div
-        className="modal-sheet w-full rounded-t-3xl p-5 pb-8"
+        className="modal-sheet w-full rounded-t-3xl p-5 pb-[calc(2rem+env(safe-area-inset-bottom))]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="modal-accent-bar mb-4 rounded-t-3xl" />
@@ -88,7 +88,7 @@ export function TriageSession({ items, onSchedule, onDelete, onClose }: Props) {
           <button
             type="button"
             onClick={() => onDelete(current)}
-            className="text-red-400/90 border-red-400/20 bg-red-400/8 justify-center rounded-lg border py-3 text-sm font-medium"
+            className="text-danger border-red-400/20 bg-red-400/8 justify-center rounded-lg border py-3 text-sm font-medium"
           >
             Delete
           </button>

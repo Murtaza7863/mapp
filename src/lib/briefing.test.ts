@@ -31,4 +31,34 @@ describe("computeDailyBriefing", () => {
     const briefing = computeDailyBriefing([], new Date("2026-07-26T12:00:00"));
     expect(briefing.headline).toBe("You're clear");
   });
+
+  it("does not claim you're clear when work is scheduled ahead", () => {
+    const items = [
+      createItem({ title: "Essay", dueAt: "2026-08-05T09:00:00" }),
+      createItem({ title: "Rent", dueAt: "2026-08-01T09:00:00" }),
+    ];
+    const briefing = computeDailyBriefing(
+      items,
+      new Date("2026-07-26T12:00:00"),
+    );
+    expect(briefing.upcoming).toBe(2);
+    expect(briefing.headline).toBe("Nothing due today");
+    expect(briefing.subline).toContain("2 coming up");
+  });
+
+  it("agrees in number for a single nudge", () => {
+    const items = [
+      createItem({
+        title: "Waiting",
+        type: "follow-up",
+        pipelineStage: "waiting",
+        lastContactAt: "2026-07-10T12:00:00",
+      }),
+    ];
+    const briefing = computeDailyBriefing(
+      items,
+      new Date("2026-07-26T12:00:00"),
+    );
+    expect(briefing.headline).toBe("1 follow-up needs a nudge");
+  });
 });

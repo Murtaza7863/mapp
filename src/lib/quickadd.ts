@@ -1,4 +1,11 @@
-import { addDays, setHours, setMinutes, startOfDay } from "date-fns";
+import {
+  addDays,
+  addHours,
+  addMonths,
+  setHours,
+  setMinutes,
+  startOfDay,
+} from "date-fns";
 import type { Category, ItemType } from "../types";
 
 export interface ParsedQuickAdd {
@@ -12,16 +19,156 @@ export interface ParsedQuickAdd {
   nextAction?: string;
 }
 
-const WEEKDAYS = [
-  "sunday",
-  "monday",
-  "tuesday",
-  "wednesday",
-  "thursday",
-  "friday",
-  "saturday",
-];
-const WEEKDAY_ABBR = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+/**
+ * Weekday spellings safe to read as a date with no cue word in front of them.
+ */
+const WEEKDAY_SAFE_RE =
+  "monday|tuesday|wednesday|thursday|friday|saturday|sunday|tues|tue|weds|wed|thurs|thur|thu|fri|mon";
+
+/**
+ * Adds "sat" and "sun", which are also ordinary words. Only trust those after a
+ * cue like "next" or "on", otherwise "study sat exam" loses the SAT and
+ * "buy sun hat" loses the sun.
+ */
+const WEEKDAY_ANY_RE = `${WEEKDAY_SAFE_RE}|sat|sun`;
+
+const MONTH_RE =
+  "jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sept?(?:ember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?";
+
+const MONTH_INDEX: Record<string, number> = {
+  jan: 0,
+  feb: 1,
+  mar: 2,
+  apr: 3,
+  may: 4,
+  jun: 5,
+  jul: 6,
+  aug: 7,
+  sep: 8,
+  oct: 9,
+  nov: 10,
+  dec: 11,
+};
+
+/** Times of day people say instead of a clock time. */
+const TIME_OF_DAY: Record<string, number> = {
+  morning: 9,
+  afternoon: 14,
+  evening: 18,
+  night: 20,
+};
+
+/** Colloquial weekday spellings → day index (0=Sun). */
+export function resolveWeekdayToken(token: string): number {
+  const t = token.toLowerCase().replace(/\.$/, "");
+  if (/^sun/.test(t)) return 0;
+  if (/^mon/.test(t)) return 1;
+  if (/^tue/.test(t)) return 2;
+  if (/^wed/.test(t)) return 3;
+  if (/^thu/.test(t)) return 4;
+  if (/^fri/.test(t)) return 5;
+  if (/^sat/.test(t)) return 6;
+  return -1;
+}
+
+function offsetToWeekday(
+  dayIndex: number,
+  now: Date,
+  mode: "next" | "this" | "nearest",
+): number {
+  const today = now.getDay();
+  if (mode === "this") {
+    return (dayIndex - today + 7) % 7;
+  }
+  if (mode === "next") {
+    return (dayIndex - today + 7) % 7 || 7;
+  }
+  // nearest upcoming (same weekday → next week)
+  return (dayIndex - today + 7) % 7 || 7;
+}
+
+function stripWeekdayMatch(text: string, match: RegExpMatchArray): string {
+  return text.replace(match[0], " ");
+}
+
+function tryWeekdayPattern(
+  text: string,
+  pattern: RegExp,
+  mode: "next" | "this" | "nearest",
+  now: Date,
+): { text: string; dayOffset: number } | null {
+  const m = text.match(pattern);
+  if (!m) return null;
+  const dayIndex = resolveWeekdayToken(m[1]);
+  if (dayIndex < 0) return null;
+  return {
+    text: stripWeekdayMatch(text, m),
+    dayOffset: offsetToWeekday(dayIndex, now, mode),
+  };
+}
+
+/** Tries every weekday phrasing, most specific first. */
+function matchWeekday(
+  text: string,
+  now: Date,
+): { text: string; dayOffset: number } | null {
+  const cued: Array<[string, "next" | "this" | "nearest", number]> = [
+    [
+      `\\s(?:due\\s+|by\\s+)?next\\s+(${WEEKDAY_ANY_RE})(?=\\s|$|[.,!?])`,
+      "next",
+      0,
+    ],
+    [`\\sthis\\s+(${WEEKDAY_ANY_RE})(?=\\s|$|[.,!?])`, "this", 0],
+    [`\\s(?:due|by|on)\\s+(${WEEKDAY_ANY_RE})(?=\\s|$|[.,!?])`, "nearest", 0],
+  ];
+
+  for (const [source, mode, bonus] of cued) {
+    const hit = tryWeekdayPattern(text, new RegExp(source, "i"), mode, now);
+    if (hit) return { ...hit, dayOffset: hit.dayOffset + bonus };
+  }
+
+  return tryWeekdayPattern(
+    text,
+    new RegExp(`\\s(${WEEKDAY_SAFE_RE})(?=\\s|$|[.,!?])`, "i"),
+    "nearest",
+    now,
+  );
+}
+
+/** Handles "dec 15", "jan 5th", "5 jan". Rolls to next year when already past. */
+function matchMonthDay(
+  text: string,
+  now: Date,
+): { text: string; date: Date } | null {
+  const forward = text.match(
+    new RegExp(
+      `\\s(?:on\\s+)?(${MONTH_RE})\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?(?=\\s|$|[.,!?])`,
+      "i",
+    ),
+  );
+  const backward = text.match(
+    new RegExp(
+      `\\s(?:on\\s+)?(\\d{1,2})(?:st|nd|rd|th)?\\s+(?:of\\s+)?(${MONTH_RE})\\.?(?=\\s|$|[.,!?])`,
+      "i",
+    ),
+  );
+
+  const hit = forward ?? backward;
+  if (!hit) return null;
+
+  const monthToken = (forward ? hit[1] : hit[2]).toLowerCase().slice(0, 3);
+  const day = parseInt(forward ? hit[2] : hit[1], 10);
+  const month = MONTH_INDEX[monthToken];
+  if (month === undefined || day < 1 || day > 31) return null;
+
+  let date = new Date(now.getFullYear(), month, day);
+  if (date.getMonth() !== month) return null; // e.g. feb 31
+  if (startOfDay(date) < startOfDay(now)) {
+    date = new Date(now.getFullYear() + 1, month, day);
+  }
+
+  return { text: text.replace(hit[0], " "), date };
+}
 
 /**
  * Parses shorthand like "pay rent tomorrow 9am #personal !" into a
@@ -62,6 +209,8 @@ export function parseQuickAdd(
   let minute = 0;
   let dayOffset: number | null = null;
   let explicitDate = false;
+  let absoluteDay: Date | null = null;
+  let absoluteAt: Date | null = null;
 
   if (/\s!{1,2}(?=\s|$)/.test(text)) {
     priority = true;
@@ -99,7 +248,9 @@ export function parseQuickAdd(
     contactName = reMatch[1].trim();
     text = text.replace(reMatch[0], " ");
   } else {
-    const atMatch = text.match(/\s@([\w][\w\s.-]{0,40}?)(?=\s+#|\s+!|\s+re:|\s*$)/i);
+    const atMatch = text.match(
+      /\s@([\w][\w\s.-]{0,40}?)(?=\s+#|\s+!|\s+re:|\s*$)/i,
+    );
     if (atMatch) {
       contactName = atMatch[1].trim();
       text = text.replace(atMatch[0], " ");
@@ -108,7 +259,7 @@ export function parseQuickAdd(
 
   if (
     !type &&
-    (/\b(follow[- ]?up|bump|email|call|reach out)\b/i.test(raw) ||
+    (/\b(follow[- ]?up|bump|reach out|waiting on|check in with)\b/i.test(raw) ||
       contactName ||
       nextAction)
   ) {
@@ -132,10 +283,34 @@ export function parseQuickAdd(
     }
   }
 
-  if (/\s(tomorrow|tmrw|tmr)(?=\s|$)/i.test(text)) {
+  const monthDay = matchMonthDay(text, now);
+  if (monthDay) {
+    absoluteDay = monthDay.date;
+    explicitDate = true;
+    text = monthDay.text;
+  } else if (/\sin\s+(?:an?|\d+)\s+hours?(?=\s|$)/i.test(text)) {
+    const m = text.match(/\sin\s+(an?|\d+)\s+hours?(?=\s|$)/i)!;
+    const amount = /^an?$/i.test(m[1]) ? 1 : parseInt(m[1], 10);
+    absoluteAt = addHours(now, amount);
+    explicitDate = true;
+    text = text.replace(m[0], " ");
+  } else if (/\s(tomorrow|tmrw|tmr)(?=\s|$)/i.test(text)) {
     dayOffset = 1;
     explicitDate = true;
     text = text.replace(/\s(tomorrow|tmrw|tmr)(?=\s|$)/gi, " ");
+  } else if (/\sthis weekend(?=\s|$)/i.test(text)) {
+    dayOffset = (6 - now.getDay() + 7) % 7 || 7;
+    explicitDate = true;
+    text = text.replace(/\sthis weekend(?=\s|$)/gi, " ");
+  } else if (/\s(?:end of (?:the )?week|eow)(?=\s|$)/i.test(text)) {
+    dayOffset = (5 - now.getDay() + 7) % 7 || 7;
+    explicitDate = true;
+    if (hour === null) hour = 17;
+    text = text.replace(/\s(?:end of (?:the )?week|eow)(?=\s|$)/gi, " ");
+  } else if (/\snext month(?=\s|$)/i.test(text)) {
+    absoluteDay = addMonths(now, 1);
+    explicitDate = true;
+    text = text.replace(/\snext month(?=\s|$)/gi, " ");
   } else if (/\s(eod|end of day)(?=\s|$)/i.test(text)) {
     dayOffset = 0;
     explicitDate = true;
@@ -164,83 +339,48 @@ export function parseQuickAdd(
     dayOffset = 7;
     explicitDate = true;
     text = text.replace(/\snext week(?=\s|$)/gi, " ");
-  } else if (/\snext\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun)(?=\s|$|[.,!?])/i.test(text)) {
-    const m = text.match(
-      /\snext\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun)(?=\s|$|[.,!?])/i,
-    )!;
-    const token = m[1].toLowerCase();
-    const idx = WEEKDAYS.findIndex((d) => d.startsWith(token.slice(0, 3)));
-    const abbrIdx = WEEKDAY_ABBR.indexOf(token.slice(0, 3));
-    const dayIndex = idx >= 0 ? idx : abbrIdx;
-    if (dayIndex >= 0) {
-      dayOffset = (dayIndex - now.getDay() + 7) % 7 || 7;
-      explicitDate = true;
-      text = text.replace(m[0], " ");
-    }
-  } else if (/\sthis\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun)(?=\s|$|[.,!?])/i.test(text)) {
-    const m = text.match(
-      /\sthis\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun)(?=\s|$|[.,!?])/i,
-    )!;
-    const token = m[1].toLowerCase();
-    const idx = WEEKDAYS.findIndex((d) => d.startsWith(token.slice(0, 3)));
-    const abbrIdx = WEEKDAY_ABBR.indexOf(token.slice(0, 3));
-    const dayIndex = idx >= 0 ? idx : abbrIdx;
-    if (dayIndex >= 0) {
-      let offset = (dayIndex - now.getDay() + 7) % 7;
-      if (offset === 0) offset = 0; // today if same weekday
-      dayOffset = offset;
-      explicitDate = true;
-      text = text.replace(m[0], " ");
-    }
   } else {
-    const nextDay = text.match(
-      /\s(?:due|by\s+)?next\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun)(?=\s|$|[.,!?])/i,
+    const weekday = matchWeekday(text, now);
+    if (weekday) {
+      dayOffset = weekday.dayOffset;
+      explicitDate = true;
+      text = weekday.text;
+    }
+  }
+
+  if (hour === null) {
+    const noon = text.match(
+      /\s(?:at\s+)?(noon|midday|midnight)(?=\s|$|[.,!?])/i,
     );
-    if (nextDay) {
-      const token = nextDay[1].toLowerCase();
-      const idx = WEEKDAYS.findIndex((d) => d.startsWith(token.slice(0, 3)));
-      const abbrIdx = WEEKDAY_ABBR.indexOf(token.slice(0, 3));
-      const dayIndex = idx >= 0 ? idx : abbrIdx;
-      if (dayIndex >= 0) {
-        const nearest = (dayIndex - now.getDay() + 7) % 7 || 7;
-        dayOffset = nearest + 7;
-        explicitDate = true;
-        text = text.replace(nextDay[0], " ");
-      }
+    if (noon) {
+      hour = /midnight/i.test(noon[1]) ? 0 : 12;
+      text = text.replace(noon[0], " ");
     } else {
-      const dueByDay = text.match(
-        /\s(?:due|by)\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun)(?=\s|$|[.,!?])/i,
+      // "morning" only reads as a time once we already know the day, so
+      // "morning routine" keeps its name.
+      const partOfDay = text.match(
+        /\s(?:at\s+|in\s+the\s+|this\s+)?(morning|afternoon|evening|night)(?=\s|$|[.,!?])/i,
       );
-      if (dueByDay) {
-        const token = dueByDay[1].toLowerCase();
-        const idx = WEEKDAYS.findIndex((d) => d.startsWith(token.slice(0, 3)));
-        const abbrIdx = WEEKDAY_ABBR.indexOf(token.slice(0, 3));
-        const dayIndex = idx >= 0 ? idx : abbrIdx;
-        if (dayIndex >= 0) {
-          dayOffset = (dayIndex - now.getDay() + 7) % 7 || 7;
-          explicitDate = true;
-          text = text.replace(dueByDay[0], " ");
-        }
-      } else {
-        for (let i = 0; i < 7; i++) {
-          const re = new RegExp(
-            `\\s(?:on\\s+)?(${WEEKDAYS[i]}|${WEEKDAY_ABBR[i]})(?=\\s|$|[.,!?])`,
-            "i",
-          );
-          const m = text.match(re);
-          if (m) {
-            dayOffset = (i - now.getDay() + 7) % 7 || 7;
-            explicitDate = true;
-            text = text.replace(m[0], " ");
-            break;
-          }
-        }
+      const cued = partOfDay
+        ? /\s(?:at|in the|this)\s/i.test(partOfDay[0])
+        : false;
+      if (partOfDay && (explicitDate || cued)) {
+        hour = TIME_OF_DAY[partOfDay[1].toLowerCase()];
+        if (!explicitDate) explicitDate = true;
+        text = text.replace(partOfDay[0], " ");
       }
     }
   }
 
   let dueAt: string | undefined;
-  if (explicitDate || hour !== null) {
+  if (absoluteAt) {
+    dueAt = absoluteAt.toISOString();
+  } else if (absoluteDay) {
+    dueAt = setMinutes(
+      setHours(startOfDay(absoluteDay), hour ?? 9),
+      hour === null ? 0 : minute,
+    ).toISOString();
+  } else if (explicitDate || hour !== null) {
     const offset = dayOffset ?? 0;
     let d = setMinutes(
       setHours(startOfDay(addDays(now, offset)), hour ?? 9),
@@ -251,7 +391,17 @@ export function parseQuickAdd(
     dueAt = d.toISOString();
   }
 
-  const title = text.replace(/\s+/g, " ").trim();
+  // Soft contact verbs without a date stay as open loops; with a date they're tasks.
+  if (!type && !dueAt && /\b(email|call|text)\b/i.test(raw)) {
+    type = "follow-up";
+  }
+
+  // "3pm tmrw" is all date and no task. Keep it rather than dropping it.
+  const title =
+    text
+      .replace(/\s+/g, " ")
+      .trim()
+      .replace(/\s+(?:due|by|on)$/i, "") || (dueAt ? "Reminder" : "");
   return {
     title,
     dueAt,

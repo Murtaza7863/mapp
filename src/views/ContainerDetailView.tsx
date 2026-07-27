@@ -159,9 +159,9 @@ export function ContainerDetailView() {
               {progress.label}
             </span>
           </div>
-          <div className="bg-white/5 mt-2 h-1.5 overflow-hidden rounded-full">
+          <div className="bg-paper mt-2 h-1.5 overflow-hidden rounded-full">
             <div
-              className="bg-sky-500/80 h-full rounded-full transition-all"
+              className="bg-block h-full rounded-full transition-all"
               style={{ width: `${progress.percent}%` }}
             />
           </div>
@@ -183,7 +183,7 @@ export function ContainerDetailView() {
                       <button
                         type="button"
                         onClick={() => openAddChild(key)}
-                        className="text-sky-400 text-[11px] font-medium"
+                        className="text-block text-[11px] font-medium"
                       >
                         + Add
                       </button>
@@ -264,7 +264,7 @@ export function ContainerDetailView() {
             await deleteItemCascade(parent.id);
             navigate(backTo);
           }}
-          className="text-red-400/90 w-full py-2 text-sm"
+          className="text-danger w-full py-2 text-sm"
         >
           Delete {folderLabel}
         </button>

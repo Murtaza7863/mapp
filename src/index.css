@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./fonts.css";
 
 @theme {
   --font-sans: "Figtree", system-ui, -apple-system, sans-serif;
@@ -8,7 +9,8 @@
   --color-ink: #1a2332;
   --color-slate: #5c6b7a;
   --color-block: #3d6b8c;
-  --color-mark: #b8860b;
+  /* Deep enough to clear 4.5:1 against white text on filled buttons. */
+  --color-mark: #966d09;
   --color-rule: #e2e6ec;
   --color-surface: #ffffff;
   --color-danger: #b42318;
@@ -146,6 +148,19 @@ body {
 
 .input-field::placeholder {
   color: #94a3b8;
+}
+
+/*
+ * iOS Safari zooms the whole page when a focused field renders under 16px, and
+ * never zooms back out. Utility classes like text-xs would win on specificity
+ * alone, so match element+class. Touch only, so desktop keeps the denser look.
+ */
+@media (pointer: coarse) {
+  input.input-field,
+  select.input-field,
+  textarea.input-field {
+    font-size: 16px;
+  }
 }
 
 .input-field:focus,
@@ -361,37 +376,6 @@ body {
   100% {
     transform: scale(1);
   }
-}
-
-.brand-lockup {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  text-decoration: none;
-  transition: opacity 0.15s ease;
-}
-
-.brand-lockup:active {
-  opacity: 0.75;
-}
-
-.brand-map-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.75rem;
-  height: 1.75rem;
-  border-radius: 0.5rem;
-  background: #eef3f7;
-  border: 1px solid #c5d5e3;
-  color: var(--color-block);
-}
-
-.brand-wordmark {
-  font-size: 0.9375rem;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  color: var(--color-ink);
 }
 
 /* ── Capture hero ── */
@@ -701,30 +685,23 @@ body {
   background: rgba(26, 35, 50, 0.35);
 }
 
-.brand-mark {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  border-radius: 0.5rem;
-  background: #eef3f7;
-  border: 1px solid #c5d5e3;
-}
-
-.brand-wordmark-accent {
-  color: var(--color-mark);
-}
-
 .compose-bar-status {
   margin-top: 0.375rem;
   font-size: 0.75rem;
   color: var(--color-block);
 }
 
-/* ── On-device AI wow ── */
+/* ── On-device AI ── */
 
 .capture-hero-header {
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.375rem;
+  min-height: 1.5rem;
+}
+
+/* The on-device badge renders nothing without WebGPU, which is the common
+   case on iOS Safari. Collapse the row instead of leaving a gap. */
+.capture-hero-header:empty {
+  display: none;
 }
 
 .ai-badge {
@@ -751,21 +728,6 @@ body {
   color: var(--color-slate);
 }
 
-.ai-badge-muted {
-  opacity: 0.85;
-}
-
-.ai-badge-pill {
-  font-size: 0.5625rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  padding: 0.125rem 0.375rem;
-  border-radius: 9999px;
-  background: var(--color-block);
-  color: #fff;
-}
-
 @keyframes ai-badge-glow {
   0%,
   100% {
@@ -776,53 +738,29 @@ body {
   }
 }
 
-.plot-demo-chips {
-  margin-bottom: 0.5rem;
+.ai-insight {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.75rem 0.875rem;
+  margin-bottom: 0.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid #c5d5e3;
+  background: linear-gradient(135deg, #eef3f7 0%, #faf8f3 100%);
 }
 
-.plot-demo-label {
+.ai-insight-loading {
+  opacity: 0.85;
+}
+
+.ai-confirm-badge {
   font-size: 0.625rem;
   font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--color-slate);
-  margin-bottom: 0.375rem;
-}
-
-.plot-demo-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.375rem;
-}
-
-.plot-demo-chip {
-  font-size: 0.6875rem;
-  font-weight: 500;
-  padding: 0.3125rem 0.625rem;
+  padding: 0.125rem 0.5rem;
   border-radius: 9999px;
-  border: 1px solid var(--color-rule);
-  background: var(--color-surface);
-  color: var(--color-block);
-  transition:
-    background 0.12s ease,
-    border-color 0.12s ease;
-}
-
-.plot-demo-chip:active:not(:disabled) {
   background: #eef3f7;
-  border-color: #c5d5e3;
-}
-
-.plot-demo-chip:disabled {
-  opacity: 0.5;
-}
-
-.plot-demo-wow {
-  margin-top: 0.375rem;
-  font-size: 0.6875rem;
-  color: var(--color-mark);
-  font-style: italic;
-  animation: resolve-settle 0.3s ease;
+  border: 1px solid #c5d5e3;
+  color: var(--color-block);
 }
 
 .compose-bar-listening {
@@ -844,52 +782,8 @@ body {
   background: #fdf6e8;
 }
 
-.compose-bar-listening-label {
-  color: var(--color-mark);
-}
-
-.ai-briefing-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+.briefing-wrap {
   margin-bottom: 0.25rem;
-}
-
-.ai-insight {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
-  padding: 0.75rem 0.875rem;
-  border-radius: 0.75rem;
-  border: 1px solid #c5d5e3;
-  background: linear-gradient(135deg, #eef3f7 0%, #faf8f3 100%);
-}
-
-.ai-insight-loading {
-  opacity: 0.85;
-}
-
-.ai-insight-tag {
-  flex-shrink: 0;
-  font-size: 0.5625rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  padding: 0.125rem 0.375rem;
-  border-radius: 0.25rem;
-  background: var(--color-mark);
-  color: #fff;
-  margin-top: 0.125rem;
-}
-
-.ai-confirm-badge {
-  font-size: 0.625rem;
-  font-weight: 600;
-  padding: 0.125rem 0.5rem;
-  border-radius: 9999px;
-  background: #eef3f7;
-  border: 1px solid #c5d5e3;
-  color: var(--color-block);
 }
 
 ::-webkit-scrollbar {
