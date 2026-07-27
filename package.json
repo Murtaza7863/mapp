@@ -1,8 +1,13 @@
 {
   "name": "mapp",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "Offline-first PWA command center with natural-language Plot",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Murtaza7863/mapp.git"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
@@ -10,7 +15,8 @@
     "test:smoke": "vitest run src/test/smoke.test.ts",
     "test:watch": "vitest",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "typecheck": "tsc -b --noEmit"
   },
   "dependencies": {
     "@mlc-ai/web-llm": "^0.2.84",

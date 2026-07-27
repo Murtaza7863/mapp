@@ -2,8 +2,8 @@ import type { InitProgressCallback } from "@mlc-ai/web-llm";
 
 import type { Category } from "../../types";
 
-import { buildFeatureCatalogPrompt } from "./features";
-import { generateWithPlotModel } from "./llm-engine";
+import { generatePlotParse } from "./llm-engine";
+import { mergePlotProposals } from "./merge-proposals";
 import { refineProposals } from "./refine-proposals";
 import { parseDumpWithRules, splitDumpLines } from "./rules-parser";
 import type { ParseDumpResult } from "./types";
@@ -15,24 +15,28 @@ export interface ParseDumpOptions {
   onModelProgress?: InitProgressCallback;
 }
 
-function buildParsePrompt(dump: string, categories: Category[]): string {
-  const areas = categories.map((c) => c.name).join(", ") || "Work, Personal";
-  const today = new Date().toISOString().slice(0, 10);
+function refineRulesResult(
+  text: string,
+  categories: Category[],
+): ParseDumpResult {
+  const lines = splitDumpLines(text);
+  const rulesResult = parseDumpWithRules(text, categories);
+  return {
+    ...rulesResult,
+    items: refineProposals(rulesResult.items, categories, lines),
+  };
+}
 
-  return `Today: ${today}. Areas: ${areas}.
-${buildFeatureCatalogPrompt(categories)}
-
-Return JSON only:
-{"items":[{"title":"","type":"deadline|routine|follow-up|note","categoryHint":null,"dueAt":null,"priority":false,"contactName":null}],"actions":[{"kind":"create_folder|create_area","title":"","categoryHint":null}],"clarifications":[]}
-
-Examples:
-"email prof tomorrow, gym friday" -> 2 items; follow-up + deadline; dueAt as ISO. actions [].
-"follow up Google next week !" -> follow-up, priority true, contactName Google.
-"create a folder for smubia" -> actions:[{kind:"create_folder",title:"Smubia"}]; items [].
-"new area called Research" -> actions:[{kind:"create_area",title:"Research"}]; items [].
-
-Dump:
-${dump.trim()}`;
+/** Fast rules-only parse — synchronous, for instant confirm preview. */
+export function parseRulesDump(
+  text: string,
+  categories: Category[],
+): ParseDumpResult {
+  const trimmed = text.trim();
+  if (!trimmed) {
+    return { items: [], actions: [], clarifications: [], source: "rules" };
+  }
+  return refineRulesResult(trimmed, categories);
 }
 
 /** Skip the slow on-device model when quick parse already nailed it. */
@@ -50,7 +54,6 @@ export function shouldUseLlm(
 
   if (covered === 0) return true;
 
-  // Feature-only dumps are already handled by rules.
   if (rulesActionCount > 0 && rulesItemCount === 0 && covered >= segmentCount) {
     return false;
   }
@@ -67,7 +70,73 @@ export function shouldUseLlm(
 
   if (segmentCount >= 2 && covered < segmentCount * 0.6) return true;
 
+  if (
+    trimmed.length > 140 &&
+    /(?:finished|talked|just|need to|waiting on)/i.test(trimmed)
+  ) {
+    return true;
+  }
+
   return false;
+}
+
+/** Run on-device model when quick parse needs a boost. Returns null to keep rules. */
+export async function refineDumpWithLlm(
+  text: string,
+  categories: Category[],
+  rulesResult: ParseDumpResult,
+  onModelProgress?: InitProgressCallback,
+): Promise<ParseDumpResult | null> {
+  const trimmed = text.trim();
+  if (
+    !trimmed ||
+    !shouldUseLlm(trimmed, rulesResult.items.length, rulesResult.actions.length)
+  ) {
+    return null;
+  }
+
+  const lines = splitDumpLines(trimmed);
+  const raw = await generatePlotParse({
+    dump: trimmed,
+    categories,
+    rulesPreview: rulesResult.items,
+    onProgress: onModelProgress,
+  });
+
+  const { items, actions, clarifications } = parseModelResponse(
+    raw,
+    categories,
+  );
+  const refinedLlm = refineProposals(items, categories, lines);
+  const mergedItems = mergePlotProposals(rulesResult.items, refinedLlm);
+  const mergedActions = actions.length > 0 ? actions : rulesResult.actions;
+
+  if (mergedItems.length === 0 && mergedActions.length === 0) return null;
+
+  const improved =
+    mergedItems.length > rulesResult.items.length ||
+    mergedActions.length > rulesResult.actions.length ||
+    mergedItems.some((item, i) => {
+      const rule = rulesResult.items[i];
+      if (!rule) return true;
+      return (
+        item.dueAt !== rule.dueAt ||
+        item.type !== rule.type ||
+        item.contactName !== rule.contactName ||
+        item.categoryId !== rule.categoryId
+      );
+    });
+
+  if (!improved && rulesResult.items.length + rulesResult.actions.length > 0) {
+    return null;
+  }
+
+  return {
+    items: mergedItems,
+    actions: mergedActions,
+    clarifications: [...rulesResult.clarifications, ...clarifications],
+    source: "llm",
+  };
 }
 
 export async function parseBrainDump(
@@ -79,12 +148,7 @@ export async function parseBrainDump(
     return { items: [], actions: [], clarifications: [], source: "rules" };
   }
 
-  const lines = splitDumpLines(trimmed);
-  const rulesResult = parseDumpWithRules(trimmed, options.categories);
-  const refinedRules: ParseDumpResult = {
-    ...rulesResult,
-    items: refineProposals(rulesResult.items, options.categories, lines),
-  };
+  const refinedRules = refineRulesResult(trimmed, options.categories);
 
   const tryLlm =
     options.preferLlm !== false &&
@@ -99,24 +163,13 @@ export async function parseBrainDump(
   }
 
   try {
-    const prompt = buildParsePrompt(trimmed, options.categories);
-    const raw = await generateWithPlotModel(prompt, options.onModelProgress);
-    const { items, actions, clarifications } = parseModelResponse(
-      raw,
+    const llmResult = await refineDumpWithLlm(
+      trimmed,
       options.categories,
+      refinedRules,
+      options.onModelProgress,
     );
-    const refined = refineProposals(items, options.categories, lines);
-
-    if (refined.length + actions.length >= refinedRules.items.length + refinedRules.actions.length) {
-      return {
-        items: refined,
-        actions: actions.length > 0 ? actions : refinedRules.actions,
-        clarifications,
-        source: "llm",
-      };
-    }
-
-    return refinedRules;
+    return llmResult ?? refinedRules;
   } catch {
     return refinedRules;
   }

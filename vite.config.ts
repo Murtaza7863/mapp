@@ -4,13 +4,6 @@ import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
-  preview: {
-    // Allow Cloudflare quick tunnels / LAN hosts when sharing a phone preview.
-    allowedHosts: true,
-  },
-  server: {
-    allowedHosts: true,
-  },
   optimizeDeps: {
     exclude: ["@mlc-ai/web-llm"],
   },
@@ -39,8 +32,8 @@ export default defineConfig({
         short_name: "mApp",
         description:
           "A new way to stay organised — map tasks, threads, and routines in one mobile app.",
-        theme_color: "#F8F9FB",
-        background_color: "#F8F9FB",
+        theme_color: "#070708",
+        background_color: "#070708",
         display: "standalone",
         orientation: "portrait",
         start_url: "/",

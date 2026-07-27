@@ -214,8 +214,7 @@ export function MapIcon({ className, style }: IconProps) {
 export function SparkIcon({ className, style }: IconProps) {
   return (
     <svg {...base} className={className} style={style}>
-      <path d="M12 3l1.2 4.2L17.5 8 13.2 9.2 12 13.5 10.8 9.2 6.5 8l4.3-.8L12 3z" />
-      <path d="M5 14l.7 2.3L8 17l-2.3.7L5 20l-.7-2.3L2 17l2.3-.7L5 14z" />
+      <path d="M12 2.5l1.4 4.8L18 9l-4.6 1.2L12 15l-1.4-4.8L6 9l4.6-1.7L12 2.5z" />
     </svg>
   );
 }

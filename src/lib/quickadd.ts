@@ -193,31 +193,47 @@ export function parseQuickAdd(
       text = text.replace(m[0], " ");
     }
   } else {
-    const dueByDay = text.match(
-      /\s(?:due|by)\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun)(?=\s|$|[.,!?])/i,
+    const nextDay = text.match(
+      /\s(?:due|by\s+)?next\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun)(?=\s|$|[.,!?])/i,
     );
-    if (dueByDay) {
-      const token = dueByDay[1].toLowerCase();
+    if (nextDay) {
+      const token = nextDay[1].toLowerCase();
       const idx = WEEKDAYS.findIndex((d) => d.startsWith(token.slice(0, 3)));
       const abbrIdx = WEEKDAY_ABBR.indexOf(token.slice(0, 3));
       const dayIndex = idx >= 0 ? idx : abbrIdx;
       if (dayIndex >= 0) {
-        dayOffset = (dayIndex - now.getDay() + 7) % 7 || 7;
+        const nearest = (dayIndex - now.getDay() + 7) % 7 || 7;
+        dayOffset = nearest + 7;
         explicitDate = true;
-        text = text.replace(dueByDay[0], " ");
+        text = text.replace(nextDay[0], " ");
       }
     } else {
-      for (let i = 0; i < 7; i++) {
-        const re = new RegExp(
-          `\\s(?:on\\s+)?(${WEEKDAYS[i]}|${WEEKDAY_ABBR[i]})(?=\\s|$|[.,!?])`,
-          "i",
-        );
-        const m = text.match(re);
-        if (m) {
-          dayOffset = (i - now.getDay() + 7) % 7 || 7;
+      const dueByDay = text.match(
+        /\s(?:due|by)\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun)(?=\s|$|[.,!?])/i,
+      );
+      if (dueByDay) {
+        const token = dueByDay[1].toLowerCase();
+        const idx = WEEKDAYS.findIndex((d) => d.startsWith(token.slice(0, 3)));
+        const abbrIdx = WEEKDAY_ABBR.indexOf(token.slice(0, 3));
+        const dayIndex = idx >= 0 ? idx : abbrIdx;
+        if (dayIndex >= 0) {
+          dayOffset = (dayIndex - now.getDay() + 7) % 7 || 7;
           explicitDate = true;
-          text = text.replace(m[0], " ");
-          break;
+          text = text.replace(dueByDay[0], " ");
+        }
+      } else {
+        for (let i = 0; i < 7; i++) {
+          const re = new RegExp(
+            `\\s(?:on\\s+)?(${WEEKDAYS[i]}|${WEEKDAY_ABBR[i]})(?=\\s|$|[.,!?])`,
+            "i",
+          );
+          const m = text.match(re);
+          if (m) {
+            dayOffset = (i - now.getDay() + 7) % 7 || 7;
+            explicitDate = true;
+            text = text.replace(m[0], " ");
+            break;
+          }
         }
       }
     }

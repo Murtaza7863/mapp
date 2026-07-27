@@ -49,8 +49,8 @@ export function BootGate({ children }: { children: React.ReactNode }) {
   if (state.status === "loading") {
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center gap-3 px-6 text-center">
-        <div className="border-rule h-8 w-8 animate-spin rounded-full border-2 border-t-mark" />
-        <p className="text-muted text-sm">Loading mApp…</p>
+        <div className="border-white/10 h-8 w-8 animate-spin rounded-full border-2 border-t-[#8b7cf8]" />
+        <p className="text-zinc-400 text-sm">Loading mApp…</p>
       </div>
     );
   }
@@ -58,10 +58,10 @@ export function BootGate({ children }: { children: React.ReactNode }) {
   if (state.status === "error") {
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center gap-4 px-6 text-center">
-        <p className="text-primary text-lg font-semibold">
+        <p className="text-zinc-100 text-lg font-semibold">
           Could not open database
         </p>
-        <p className="text-muted text-sm leading-relaxed">{state.message}</p>
+        <p className="text-zinc-500 text-sm leading-relaxed">{state.message}</p>
         <button
           type="button"
           onClick={() => window.location.reload()}
@@ -76,8 +76,8 @@ export function BootGate({ children }: { children: React.ReactNode }) {
   if (state.status === "restore-prompt") {
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center gap-4 px-6 text-center">
-        <p className="text-primary text-lg font-semibold">Restore backup?</p>
-        <p className="text-muted text-sm leading-relaxed">
+        <p className="text-zinc-100 text-lg font-semibold">Restore backup?</p>
+        <p className="text-zinc-500 text-sm leading-relaxed">
           Your task list looks empty, but an auto-backup was found on this
           device.
         </p>

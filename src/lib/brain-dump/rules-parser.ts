@@ -6,7 +6,8 @@ import { parseQuickAdd } from "../quickadd";
 import { stripAreaSuffix } from "./area-hints";
 import { extractContact } from "./contacts";
 import { featureIntentToProposal, matchFeatureIntent } from "./features";
-import { parseFolderTaskLine } from "./folder-parse";
+import { parsePlotStructure, structureSummary } from "./structure-parser";
+import { parseFolderTaskLine, type FolderTaskParse } from "./folder-parse";
 import { expandLineSegments } from "./line-split";
 import {
   normalizePlotLine,
@@ -67,14 +68,37 @@ function mergeContextCommaParts(parts: string[]): string[] {
   return merged;
 }
 
+function splitCommaRespectingParens(text: string): string[] {
+  const parts: string[] = [];
+  let depth = 0;
+  let start = 0;
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === "(") depth += 1;
+    if (ch === ")" && depth > 0) depth -= 1;
+    if (ch === "," && depth === 0) {
+      const next = text.slice(i + 1);
+      if (/^\s+/.test(next)) {
+        parts.push(text.slice(start, i).trim());
+        start = i + 1;
+        while (start < text.length && /\s/.test(text[start]!)) start += 1;
+        i = start - 1;
+      }
+    }
+  }
+
+  const tail = text.slice(start).trim();
+  if (tail) parts.push(tail);
+  return parts;
+}
+
 export function splitDumpLines(text: string): string[] {
   const normalized = text.trim();
   if (!normalized) return [];
 
   if (normalized.includes("\n")) {
-    return normalized
-      .split(/\n+/)
-      .flatMap((chunk) => splitDumpLines(chunk));
+    return normalized.split(/\n+/).flatMap((chunk) => splitDumpLines(chunk));
   }
 
   const rambleLines = splitRambleSentences(normalized);
@@ -85,8 +109,7 @@ export function splitDumpLines(text: string): string[] {
   const line = normalizePlotLine(normalized);
 
   if (!line.includes("\n")) {
-    const commaParts = line
-      .split(/,\s+/)
+    const commaParts = splitCommaRespectingParens(line)
       .map((s) => s.trim())
       .filter(Boolean);
     if (commaParts.length >= 2) {
@@ -156,6 +179,23 @@ function splitContextTaskLine(line: string): {
   return { taskLine: taskPart.trim(), contextContact: context.contactName };
 }
 
+function folderDisplayName(folder: FolderTaskParse): string {
+  if (
+    folder.childGroup &&
+    !folder.folderName.toLowerCase().includes(folder.childGroup.toLowerCase())
+  ) {
+    return `${folder.folderName} ${folder.childGroup}`;
+  }
+  return folder.folderName;
+}
+
+function shouldUseEarlyFolderParse(cleaned: string): boolean {
+  return (
+    /\bput\s+.+\s+in\s+.+folder\s*$/i.test(cleaned) ||
+    /\bfolder\s*:/i.test(cleaned)
+  );
+}
+
 function lineToProposal(
   line: string,
   categories: Category[],
@@ -163,47 +203,110 @@ function lineToProposal(
   options: { parentFolderName?: string; categoryId?: string } = {},
 ): ProposedItem | null {
   const { taskLine, contextContact } = splitContextTaskLine(line);
-  const areaStripped = stripAreaSuffix(taskLine, categories);
+  const cleaned = stripTypePrefix(taskLine);
+  if (!cleaned) return null;
+
+  const earlyFolder = parseFolderTaskLine(cleaned);
+  let structure: ReturnType<typeof parsePlotStructure>;
+  let parseText: string;
+  let folderTask: FolderTaskParse | null = null;
+
+  if (earlyFolder && shouldUseEarlyFolderParse(cleaned)) {
+    const areaMatch = categories.find(
+      (c) => c.name.toLowerCase() === earlyFolder.folderName.toLowerCase(),
+    );
+    structure = {
+      areaName: areaMatch?.name,
+      createArea: false,
+      folderName: folderDisplayName(earlyFolder),
+      childGroup: earlyFolder.childGroup,
+      taskText: earlyFolder.taskTitle,
+    };
+    parseText = earlyFolder.taskTitle;
+    folderTask = earlyFolder;
+  } else {
+    structure = parsePlotStructure(cleaned, categories);
+    parseText = structure.taskText.trim();
+  }
+
+  const areaStripped = stripAreaSuffix(parseText, categories);
+  parseText = areaStripped.text;
+
   const category =
-    categories.find((c) => c.id === (options.categoryId ?? areaStripped.categoryId)) ??
+    categories.find(
+      (c) => c.id === (options.categoryId ?? areaStripped.categoryId),
+    ) ??
     categories.find(
       (c) =>
         areaStripped.categoryHint &&
-        c.name.toLowerCase().startsWith(areaStripped.categoryHint.toLowerCase()),
+        c.name
+          .toLowerCase()
+          .startsWith(areaStripped.categoryHint.toLowerCase()),
     );
 
-  const folderTask = parseFolderTaskLine(areaStripped.text, category);
-  const workingLine = folderTask?.taskTitle ?? areaStripped.text;
+  if (!earlyFolder || !shouldUseEarlyFolderParse(cleaned)) {
+    const folderFallback = !/^new\s+area\b/i.test(cleaned)
+      ? parseFolderTaskLine(cleaned, category)
+      : null;
+    if (folderFallback && !structure.folderName) {
+      structure = {
+        ...structure,
+        folderName: folderDisplayName(folderFallback),
+        childGroup: folderFallback.childGroup ?? structure.childGroup,
+        taskText: folderFallback.taskTitle,
+      };
+      parseText = folderFallback.taskTitle;
+    }
 
-  const cleaned = stripTypePrefix(workingLine);
-  const hasExplicitType = /^(?:note|follow[- ]?up|fu|deadline|task|todo|routine|project|jot down|write down|capture):/i.test(
-    workingLine,
-  );
+    folderTask = parseFolderTaskLine(parseText, category);
+    if (folderTask) {
+      parseText = folderTask.taskTitle;
+      structure = {
+        ...structure,
+        folderName:
+          structure.folderName ??
+          folderDisplayName(folderTask) ??
+          options.parentFolderName,
+        childGroup: structure.childGroup ?? folderTask.childGroup,
+        taskText: parseText,
+      };
+    } else if (options.parentFolderName && !structure.folderName) {
+      structure = {
+        ...structure,
+        folderName: options.parentFolderName,
+      };
+    }
+  }
+
+  const hasExplicitType =
+    /^(?:note|follow[- ]?up|fu|deadline|task|todo|routine|project|jot down|write down|capture):/i.test(
+      taskLine,
+    );
   if (
-    !cleaned ||
-    (!folderTask &&
-      !looksLikeTaskSegment(cleaned) &&
-      !hasExplicitType)
+    !parseText ||
+    (!folderTask && !looksLikeTaskSegment(parseText) && !hasExplicitType)
   ) {
     return null;
   }
 
-  const inferredType = inferTypeFromLine(workingLine);
-  const parsed = parseQuickAdd(cleaned, categories, now);
+  const inferredType = inferTypeFromLine(taskLine);
+  const parsed = parseQuickAdd(parseText, categories, now);
   if (!parsed.title.trim()) return null;
 
-  const contactName = contextContact ?? extractContact(workingLine);
+  const contactName = contextContact ?? extractContact(parseText);
   const type = parsed.type ?? inferredType;
+  const categoryNames = categories.map((c) => c.name);
   const title = polishTitle(
     parsed.title,
-    workingLine,
+    parseText,
     type,
     contactName,
     contextContact,
+    categoryNames,
   );
 
   if (
-    !isValidTask(workingLine, title, {
+    !isValidTask(parseText, title, {
       dueAt: parsed.dueAt,
       contactName,
       type,
@@ -212,21 +315,33 @@ function lineToProposal(
     return null;
   }
 
+  const matchedCategory = structure.areaName
+    ? categories.find(
+        (c) => c.name.toLowerCase() === structure.areaName!.toLowerCase(),
+      )
+    : undefined;
+
   const categoryId =
     options.categoryId ??
     areaStripped.categoryId ??
     parsed.categoryId ??
-    resolveCategoryId(parsed.categoryName, categories) ??
+    matchedCategory?.id ??
+    resolveCategoryId(structure.areaName ?? parsed.categoryName, categories) ??
     categories[0]?.id;
+
+  const planNotes = structureSummary(structure);
 
   return {
     id: uuidv4(),
     title,
     type,
     categoryId,
-    categoryHint: areaStripped.categoryHint ?? parsed.categoryName,
-    parentFolderName: folderTask?.folderName ?? options.parentFolderName,
-    childGroup: folderTask?.childGroup,
+    categoryHint:
+      structure.areaName ?? areaStripped.categoryHint ?? parsed.categoryName,
+    parentFolderName: structure.folderName,
+    childGroup: structure.childGroup,
+    structure,
+    planNotes: planNotes.length > 0 ? planNotes : undefined,
     dueAt: parsed.dueAt,
     priority: parsed.priority,
     contactName,
@@ -264,9 +379,14 @@ export function parseDumpWithRules(
         }
         pendingFolder = feature.title;
       }
-      const proposal = lineToProposal(compoundFolder.taskTitle, categories, now, {
-        parentFolderName: pendingFolder ?? compoundFolder.folderName,
-      });
+      const proposal = lineToProposal(
+        compoundFolder.taskTitle,
+        categories,
+        now,
+        {
+          parentFolderName: pendingFolder ?? compoundFolder.folderName,
+        },
+      );
       if (proposal) {
         const key = `${proposal.title.toLowerCase()}|${proposal.parentFolderName ?? ""}|${proposal.dueAt ?? ""}`;
         if (!seenItems.has(key)) {

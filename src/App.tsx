@@ -39,6 +39,7 @@ function AppRoutes() {
         <Route path="categories" element={<CategoryView />} />
         <Route path="folders" element={<ProjectsView />} />
         <Route path="folders/:id" element={<ContainerDetailView />} />
+        {/* Legacy routes — kept for existing bookmarks */}
         <Route path="projects" element={<ProjectsView />} />
         <Route path="projects/:id" element={<ContainerDetailView />} />
         <Route path="school" element={<Navigate to="/categories" replace />} />

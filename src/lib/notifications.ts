@@ -1,6 +1,7 @@
 import { db } from "../db";
 import { getSettings } from "../db";
 import type { Item } from "../types";
+import { config, isPushConfigured } from "../config";
 import { getNotificationFireTime } from "./dates";
 import {
   buildEventDeadlineEntries,
@@ -9,7 +10,7 @@ import {
 import { chaseReason, needsChase } from "./pipeline";
 import { canUseWebPush, pushBlockReason } from "./pwa";
 
-const API_BASE = import.meta.env.VITE_PUSH_API_URL ?? "";
+const API_BASE = config.push.apiUrl;
 
 export type PushSetupResult = { ok: true } | { ok: false; reason: string };
 
@@ -104,13 +105,14 @@ export function buildScheduledNotifications(
 }
 
 export async function registerPushSubscription(): Promise<PushSetupResult> {
-  const publicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
-  if (!publicKey || !API_BASE) {
+  if (!isPushConfigured()) {
     return {
       ok: false,
       reason: "Push is not configured for this build.",
     };
   }
+
+  const publicKey = config.push.vapidPublicKey;
 
   const blockReason = pushBlockReason();
   if (blockReason) return { ok: false, reason: blockReason };
@@ -162,8 +164,7 @@ export async function syncNotificationSchedule(): Promise<{
   ok: boolean;
   reason?: string;
 }> {
-  const publicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
-  if (!publicKey || !API_BASE) return { ok: true };
+  if (!isPushConfigured()) return { ok: true };
 
   const settings = await getSettings();
   if (!settings.notificationsEnabled) return { ok: true };
@@ -204,8 +205,7 @@ export async function syncNotificationSchedule(): Promise<{
 }
 
 export async function unregisterPushSubscription(): Promise<PushSetupResult> {
-  const publicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
-  if (!publicKey || !API_BASE) {
+  if (!isPushConfigured()) {
     await db.settings.update("app", { notificationsEnabled: false });
     return { ok: true };
   }

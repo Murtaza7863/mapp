@@ -3,6 +3,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { useEffect, useState } from "react";
 
 import { PageHeader } from "../components/ui";
+import { isPushConfigured } from "../config";
 import { db, updateSettings } from "../db";
 import { useCategories } from "../hooks/useCategories";
 import { useToast } from "../hooks/useToast";
@@ -134,9 +135,7 @@ export function SettingsView() {
     }
   };
 
-  const pushConfigured = Boolean(
-    import.meta.env.VITE_VAPID_PUBLIC_KEY && import.meta.env.VITE_PUSH_API_URL,
-  );
+  const pushConfigured = isPushConfigured();
   const installed = isStandalone();
 
   return (

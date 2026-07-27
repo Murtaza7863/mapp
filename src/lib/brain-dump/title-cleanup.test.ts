@@ -41,8 +41,8 @@ describe("title-cleanup", () => {
   });
 
   it("detects context-only clauses", () => {
-    expect(parseContextClause("finished call with shopee")?.contactName).toBe(
-      "Shopee",
+    expect(parseContextClause("finished call with acme corp")?.contactName).toBe(
+      "Acme Corp",
     );
     expect(parseContextClause("met with acme corp")?.contactName).toBe(
       "Acme Corp",

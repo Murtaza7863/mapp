@@ -1,12 +1,17 @@
 import type { InitProgressCallback, MLCEngine } from "@mlc-ai/web-llm";
 
-/** Small instruct model — ~200MB, runs on more devices than 1B+ variants. */
-export const PLOT_MODEL_ID = "SmolLM2-360M-Instruct-q4f16_1-MLC";
+import { config } from "../../config";
+import type { Category } from "../../types";
+
+import { buildPlotLlmPrompt, estimatePlotMaxTokens } from "./llm-prompt";
+import { PLOT_OUTPUT_SCHEMA, PLOT_SYSTEM_PROMPT } from "./llm-schema";
+import type { ProposedItem } from "./types";
 
 type WebLLMModule = typeof import("@mlc-ai/web-llm");
 
 let webLlmModule: WebLLMModule | null = null;
 let enginePromise: Promise<MLCEngine> | null = null;
+let loadedModelId: string | null = null;
 let latestProgress: InitProgressCallback | undefined;
 let webgpuCache: boolean | null = null;
 
@@ -38,6 +43,39 @@ export async function checkWebGPU(): Promise<boolean> {
   }
 }
 
+/** Pick the best on-device model this hardware can handle. */
+export function pickPlotModelId(): string {
+  const memory =
+    typeof navigator !== "undefined"
+      ? (navigator as Navigator & { deviceMemory?: number }).deviceMemory
+      : undefined;
+
+  if (memory !== undefined) {
+    if (memory >= 6) return config.plot.models.primary;
+    if (memory >= 4) return config.plot.models.fallback;
+    return config.plot.models.compact;
+  }
+
+  return config.plot.models.primary;
+}
+
+export function getLoadedPlotModelId(): string | null {
+  return loadedModelId;
+}
+
+async function createEngine(
+  modelId: string,
+  onProgress?: InitProgressCallback,
+): Promise<MLCEngine> {
+  const { CreateMLCEngine } = await loadWebLLM();
+  return CreateMLCEngine(modelId, {
+    initProgressCallback: (report) => {
+      latestProgress?.(report);
+      onProgress?.(report);
+    },
+  });
+}
+
 export async function loadPlotEngine(
   onProgress?: InitProgressCallback,
 ): Promise<MLCEngine> {
@@ -47,41 +85,66 @@ export async function loadPlotEngine(
   }
 
   latestProgress = onProgress;
+  const preferred = pickPlotModelId();
+  const candidates = [
+    preferred,
+    ...config.plot.modelCandidates.filter((id) => id !== preferred),
+  ];
 
-  if (!enginePromise) {
-    enginePromise = loadWebLLM()
-      .then(({ CreateMLCEngine }) =>
-        CreateMLCEngine(PLOT_MODEL_ID, {
-          initProgressCallback: (report) => {
-            latestProgress?.(report);
-          },
-        }),
-      )
-      .catch((err) => {
-        enginePromise = null;
-        throw err;
-      });
+  if (enginePromise && loadedModelId && candidates[0] === loadedModelId) {
+    return enginePromise;
   }
+
+  enginePromise = (async () => {
+    let lastError: unknown;
+    for (const modelId of candidates) {
+      try {
+        const engine = await createEngine(modelId, onProgress);
+        loadedModelId = modelId;
+        return engine;
+      } catch (err) {
+        lastError = err;
+        console.warn(`Plot model ${modelId} failed to load`, err);
+      }
+    }
+    enginePromise = null;
+    loadedModelId = null;
+    throw lastError instanceof Error
+      ? lastError
+      : new Error("Could not load any on-device Plot model.");
+  })();
 
   return enginePromise;
 }
 
-export async function generateWithPlotModel(
-  prompt: string,
-  onProgress?: InitProgressCallback,
+export interface PlotLlmRequest {
+  dump: string;
+  categories: Category[];
+  rulesPreview?: ProposedItem[];
+  onProgress?: InitProgressCallback;
+}
+
+export async function generatePlotParse(
+  request: PlotLlmRequest,
 ): Promise<string> {
-  const engine = await loadPlotEngine(onProgress);
+  const engine = await loadPlotEngine(request.onProgress);
+  const prompt = buildPlotLlmPrompt(
+    request.dump,
+    request.categories,
+    request.rulesPreview ?? [],
+  );
 
   const response = await engine.chat.completions.create({
     messages: [
-      {
-        role: "system",
-        content: "Extract tasks as JSON only. No markdown.",
-      },
+      { role: "system", content: PLOT_SYSTEM_PROMPT },
       { role: "user", content: prompt },
     ],
-    temperature: 0.05,
-    max_tokens: 280,
+    temperature: 0.1,
+    max_tokens: estimatePlotMaxTokens(request.dump),
+    response_format: {
+      type: "json_object",
+      schema: PLOT_OUTPUT_SCHEMA,
+    },
   });
 
   const content = response.choices[0]?.message?.content;
@@ -89,6 +152,31 @@ export async function generateWithPlotModel(
     throw new Error("Model returned an empty response.");
   }
 
+  return content;
+}
+
+/** @deprecated Use generatePlotParse */
+export async function generateWithPlotModel(
+  prompt: string,
+  onProgress?: InitProgressCallback,
+): Promise<string> {
+  const engine = await loadPlotEngine(onProgress);
+  const response = await engine.chat.completions.create({
+    messages: [
+      { role: "system", content: PLOT_SYSTEM_PROMPT },
+      { role: "user", content: prompt },
+    ],
+    temperature: 0.1,
+    max_tokens: 320,
+    response_format: {
+      type: "json_object",
+      schema: PLOT_OUTPUT_SCHEMA,
+    },
+  });
+  const content = response.choices[0]?.message?.content;
+  if (!content?.trim()) {
+    throw new Error("Model returned an empty response.");
+  }
   return content;
 }
 

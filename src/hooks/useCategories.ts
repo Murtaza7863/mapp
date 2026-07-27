@@ -8,9 +8,17 @@ export function useCategories() {
   const categories =
     useLiveQuery(() => db.categories.orderBy("sortOrder").toArray(), []) ?? [];
 
-  const addCategory = async (data: Omit<Category, "id" | "sortOrder">) => {
+  const addCategory = async (
+    data: Omit<Category, "id" | "sortOrder">,
+  ): Promise<Category> => {
     const maxOrder = categories.reduce((m, c) => Math.max(m, c.sortOrder), -1);
-    await db.categories.add({ ...data, id: uuidv4(), sortOrder: maxOrder + 1 });
+    const category: Category = {
+      ...data,
+      id: uuidv4(),
+      sortOrder: maxOrder + 1,
+    };
+    await db.categories.add(category);
+    return category;
   };
 
   const updateCategory = async (id: string, changes: Partial<Category>) => {

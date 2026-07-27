@@ -60,7 +60,7 @@ export function TodayStats({
   if (chips.length === 0) return null;
 
   return (
-    <div className="glass-card mb-6 rounded-2xl p-4">
+    <div className="glass-card mb-4 rounded-2xl p-4">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="section-label">Summary</h2>
         <Link

@@ -16,18 +16,14 @@ import { StatusLine } from "../components/StatusLine";
 import { SwipeItem } from "../components/SwipeItem";
 import { ThreadActions } from "../components/ThreadActions";
 import { TriageSession } from "../components/TriageSession";
+import { EmptyState, FilterPill, SectionHeader } from "../components/ui";
 import { WrapUpSheet, tomorrowMorning } from "../components/WrapUpSheet";
-import {
-  EmptyState,
-  FilterPill,
-  SectionHeader,
-} from "../components/ui";
 import { useCategories } from "../hooks/useCategories";
 import { useCompletions, useItems } from "../hooks/useItems";
 import { useToast } from "../hooks/useToast";
 import { useUndo } from "../hooks/useUndo";
-import { applyProposals } from "../lib/brain-dump/apply-proposals";
 import { applyThreadActionToItems } from "../lib/batch-threads";
+import { applyProposals } from "../lib/brain-dump/apply-proposals";
 import { computeDailyBriefing } from "../lib/briefing";
 import { buildEventDeadlineEntries } from "../lib/event-deadlines";
 import {
@@ -38,12 +34,12 @@ import {
   groupFeedByArea,
   groupFeedByBucket,
 } from "../lib/feed";
+import { computeMomentum } from "../lib/momentum";
 import { buildSuggestions } from "../lib/pipeline";
 import { setLastCategoryId } from "../lib/preferences";
 import { computeTodaySummary } from "../lib/stats";
 import { findQuickAction } from "../lib/thread-actions";
 import { findTriageCandidates } from "../lib/triage";
-import { computeMomentum } from "../lib/momentum";
 import { computeWrapUpSummary, isWrapUpTime } from "../lib/wrapup";
 
 type ViewMode = "feed" | "areas";
@@ -62,7 +58,8 @@ export function TodayView() {
     unsnooze,
   } = useItems();
   const { completions } = useCompletions();
-  const { categories, getCategory, addCategory } = useCategories();
+  const { categories, getCategory, addCategory, updateCategory } =
+    useCategories();
   const { deleteWithUndo } = useUndo();
   const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -180,15 +177,19 @@ export function TodayView() {
 
   const handlePlot = async (result: ParseDumpResult) => {
     try {
-      const applied = await applyProposals(result.items, categories, addItem, {
-        actions: result.actions,
-        addCategory,
-        existingItems: items,
-      });
+      const applied = await applyProposals(
+        result.items,
+        {
+          categories: [...categories],
+          items: [...items],
+          addItem,
+          addCategory,
+          updateCategory,
+        },
+        { actions: result.actions },
+      );
       const total =
-        applied.items.length +
-        applied.foldersCreated +
-        applied.areasCreated;
+        applied.items.length + applied.foldersCreated + applied.areasCreated;
       if (total === 0) return;
       if (applied.items[0]?.categoryId) {
         setLastCategoryId(applied.items[0].categoryId);
@@ -214,6 +215,7 @@ export function TodayView() {
       toast(err instanceof Error ? err.message : "Could not save items", {
         kind: "error",
       });
+      throw err;
     }
   };
 
@@ -391,9 +393,7 @@ export function TodayView() {
         </FilterPill>
         <FilterPill
           active={feedFocus === "chase"}
-          onClick={() =>
-            setFeedFocus((f) => (f === "chase" ? null : "chase"))
-          }
+          onClick={() => setFeedFocus((f) => (f === "chase" ? null : "chase"))}
         >
           Nudge{chaseCount > 0 ? ` · ${chaseCount}` : ""}
         </FilterPill>

@@ -494,7 +494,7 @@ export function ItemForm({
                 type="checkbox"
                 checked={notificationsMuted}
                 onChange={(e) => setNotificationsMuted(e.target.checked)}
-                className="rounded accent-[#ff7a59]"
+                className="rounded accent-[#8b7cf8]"
               />
               Mute notifications for this item
             </label>
@@ -504,7 +504,7 @@ export function ItemForm({
                 type="checkbox"
                 checked={priority}
                 onChange={(e) => setPriority(e.target.checked)}
-                className="rounded accent-[#ff7a59]"
+                className="rounded accent-[#8b7cf8]"
               />
               <StarIcon
                 filled={priority}

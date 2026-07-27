@@ -5,6 +5,7 @@ export interface Env {
   VAPID_PUBLIC_KEY: string;
   VAPID_PRIVATE_KEY: string;
   VAPID_SUBJECT: string;
+  ALLOWED_ORIGINS?: string;
 }
 
 interface PushSubscriptionJSON {
@@ -31,16 +32,31 @@ interface StoredDevice {
   schedule: SchedulePayload;
 }
 
-const CORS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-};
+function corsHeaders(request: Request, env: Env): Record<string, string> {
+  const origin = request.headers.get("Origin") ?? "";
+  const allowed = (env.ALLOWED_ORIGINS ?? "*")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  const allowOrigin =
+    allowed.includes("*") || (origin && allowed.includes(origin))
+      ? origin || allowed[0] || "*"
+      : (allowed[0] ?? "");
+
+  return {
+    "Access-Control-Allow-Origin": allowOrigin,
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+  };
+}
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
+    const cors = corsHeaders(request, env);
+
     if (request.method === "OPTIONS") {
-      return new Response(null, { headers: CORS });
+      return new Response(null, { headers: cors });
     }
 
     const url = new URL(request.url);
@@ -67,7 +83,7 @@ export default {
             },
           }),
         );
-        return json({ ok: true });
+        return json({ ok: true }, 200, cors);
       }
 
       if (url.pathname === "/schedule" && request.method === "POST") {
@@ -77,22 +93,26 @@ export default {
           "json",
         );
         if (!existing?.subscription) {
-          return json({ ok: false, error: "No subscription" }, 400);
+          return json({ ok: false, error: "No subscription" }, 400, cors);
         }
         await env.KV.put(
           `device:${schedule.deviceId}`,
           JSON.stringify({ subscription: existing.subscription, schedule }),
         );
-        return json({ ok: true });
+        return json({ ok: true }, 200, cors);
       }
 
       if (url.pathname === "/vapid-public-key" && request.method === "GET") {
-        return json({ publicKey: env.VAPID_PUBLIC_KEY });
+        return json({ publicKey: env.VAPID_PUBLIC_KEY }, 200, cors);
       }
 
-      return json({ error: "Not found" }, 404);
+      return json({ error: "Not found" }, 404, cors);
     } catch (err) {
-      return json({ error: err instanceof Error ? err.message : "Error" }, 500);
+      return json(
+        { error: err instanceof Error ? err.message : "Error" },
+        500,
+        cors,
+      );
     }
   },
 
@@ -118,7 +138,6 @@ export default {
       > | null;
       const sent = sentRaw ?? {};
 
-      // Item notifications
       for (const n of schedule.notifications) {
         const fire = new Date(n.fireAt).getTime();
         if (fire <= now && fire > now - 120000 && !sent[n.id]) {
@@ -134,7 +153,6 @@ export default {
         }
       }
 
-      // Daily digest
       if (schedule.digestEnabled) {
         const [hh, mm] = schedule.digestTime.split(":").map(Number);
         const d = new Date();
@@ -174,9 +192,13 @@ export default {
   },
 };
 
-function json(data: unknown, status = 200): Response {
+function json(
+  data: unknown,
+  status = 200,
+  cors: Record<string, string> = {},
+): Response {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { ...CORS, "Content-Type": "application/json" },
+    headers: { ...cors, "Content-Type": "application/json" },
   });
 }

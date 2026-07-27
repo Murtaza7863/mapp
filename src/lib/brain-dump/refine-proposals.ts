@@ -4,7 +4,11 @@ import { parseQuickAdd } from "../quickadd";
 import { extractContact } from "./contacts";
 import type { ProposedItem } from "./types";
 import { inferTypeFromLine, stripTypePrefix } from "./rules-parser";
-import { isValidTask, polishTitle } from "./title-cleanup";
+import {
+  isValidTask,
+  polishTitle,
+  splitContextTaskLine,
+} from "./title-cleanup";
 import { resolveCategoryId } from "./validate";
 
 const WORK_HINT =
@@ -36,21 +40,31 @@ function refineProposal(
   now: Date = new Date(),
 ): ProposedItem | null {
   const raw = sourceLine ?? item.title;
-  const cleaned = stripTypePrefix(raw);
-  const parsed = parseQuickAdd(cleaned, categories, now);
-  const inferredType = item.type ?? inferTypeFromLine(raw);
+  const { taskLine, contextContact } = splitContextTaskLine(raw);
+  const cleaned = stripTypePrefix(taskLine);
+  const parseInput = item.structure?.taskText?.trim() || cleaned;
+  const parsed = parseQuickAdd(parseInput, categories, now);
+  const inferredType = item.type ?? inferTypeFromLine(taskLine);
   const type = parsed.type ?? inferredType;
 
-  const contactName = item.contactName ?? extractContact(raw);
-  const title = polishTitle(
+  const contactName =
+    item.contactName ?? contextContact ?? extractContact(taskLine);
+  const categoryNames = categories.map((c) => c.name);
+  const polished = polishTitle(
     parsed.title.trim() || item.title.trim(),
-    raw,
+    parseInput,
     type,
     contactName,
+    contextContact,
+    categoryNames,
   );
+  const title =
+    polished.length >= 4 && !/^[\w\s]+ by$/i.test(polished)
+      ? polished
+      : item.title.trim();
 
   if (
-    !isValidTask(raw, title, {
+    !isValidTask(taskLine, title, {
       dueAt: parsed.dueAt ?? item.dueAt,
       contactName,
       type,
@@ -59,9 +73,16 @@ function refineProposal(
     return null;
   }
 
+  const matchedCategory = item.structure?.areaName
+    ? categories.find(
+        (c) => c.name.toLowerCase() === item.structure!.areaName!.toLowerCase(),
+      )
+    : undefined;
+
   const categoryId =
     parsed.categoryId ??
     item.categoryId ??
+    matchedCategory?.id ??
     inferCategoryId(
       title,
       categories,
@@ -73,9 +94,11 @@ function refineProposal(
     title,
     type,
     categoryId,
-    categoryHint: parsed.categoryName ?? item.categoryHint,
+    categoryHint: item.categoryHint ?? parsed.categoryName,
     parentFolderName: item.parentFolderName,
     childGroup: item.childGroup,
+    structure: item.structure,
+    planNotes: item.planNotes,
     dueAt: parsed.dueAt ?? item.dueAt,
     priority: parsed.priority || item.priority,
     contactName,

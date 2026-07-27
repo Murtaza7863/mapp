@@ -1,12 +1,12 @@
 import { format, parseISO } from "date-fns";
 
-import { featureLabel } from "../lib/brain-dump/features";
 import type {
   ProposedFeatureAction,
   ProposedItem,
 } from "../lib/brain-dump/types";
 import type { Category } from "../types";
 
+import { featureLabel } from "../lib/brain-dump/features";
 import { ITEM_TYPE_LABELS } from "../types";
 import { DatePickerField } from "./DatePickerField";
 
@@ -22,6 +22,7 @@ interface Props {
   onConfirm: () => void;
   onClose: () => void;
   saving?: boolean;
+  refining?: boolean;
 }
 
 function formatResolved(iso: string): string {
@@ -40,6 +41,7 @@ export function ParseConfirmSheet({
   onConfirm,
   onClose,
   saving,
+  refining,
 }: Props) {
   const selectedItems = items.filter((i) => i.selected).length;
   const selectedActions = actions.filter((a) => a.selected).length;
@@ -64,9 +66,7 @@ export function ParseConfirmSheet({
     if (selectedCount === 0) return "Skip";
     const parts: string[] = [];
     if (selectedItems > 0) {
-      parts.push(
-        `${selectedItems} item${selectedItems === 1 ? "" : "s"}`,
-      );
+      parts.push(`${selectedItems} item${selectedItems === 1 ? "" : "s"}`);
     }
     if (selectedActions > 0) {
       parts.push(
@@ -93,9 +93,11 @@ export function ParseConfirmSheet({
                 Check before adding
               </h3>
               <p className="text-muted mt-1 text-xs">
-                {source === "llm"
-                  ? "Parsed on your device."
-                  : "Quick parse."}{" "}
+                {refining
+                  ? "Refining with on-device AI…"
+                  : source === "llm"
+                    ? "Parsed on your device."
+                    : "Quick parse."}{" "}
                 Edit anything that looks off.
               </p>
             </div>
@@ -109,13 +111,13 @@ export function ParseConfirmSheet({
           </div>
 
           {sourceText && (
-            <p className="text-muted mb-4 border-rule rounded-lg border bg-paper px-3 py-2 font-mono text-xs leading-relaxed italic">
+            <p className="text-muted border-rule bg-paper mb-4 rounded-lg border px-3 py-2 font-mono text-xs leading-relaxed italic">
               {sourceText}
             </p>
           )}
 
           {clarifications.length > 0 && (
-            <div className="text-warn border-rule mb-4 rounded-lg border bg-paper px-3 py-2.5 text-xs leading-relaxed">
+            <div className="text-warn border-rule bg-paper mb-4 rounded-lg border px-3 py-2.5 text-xs leading-relaxed">
               {clarifications.map((note) => (
                 <p key={note}>{note}</p>
               ))}

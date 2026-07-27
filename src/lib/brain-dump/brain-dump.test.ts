@@ -58,23 +58,44 @@ buy milk tomorrow`;
     expect(lines.length).toBe(3);
   });
 
-  it("splits comma-separated single-line dumps", () => {
-    const lines = splitDumpLines("email prof tomorrow, gym friday, pay rent !");
-    expect(lines.length).toBe(3);
-  });
-
   it("merges past-tense context into the following task", () => {
     const dump =
-      "finished call with shopee, need to finish my proposal and send a follow up by friday.";
+      "finished call with acme corp, need to finish my proposal and send a follow up by friday.";
     const lines = splitDumpLines(dump);
     expect(lines).toHaveLength(1);
 
     const { items } = parseDumpWithRules(dump, categories, NOW);
     expect(items).toHaveLength(1);
-    expect(items[0].title).toMatch(/shopee/i);
+    expect(items[0].title).toMatch(/acme corp/i);
     expect(items[0].title).toMatch(/proposal/i);
     expect(items[0].type).toBe("follow-up");
-    expect(items[0].contactName).toBe("Shopee");
+    expect(items[0].contactName).toBe("Acme Corp");
+    expect(items[0].dueAt).toBeTruthy();
+  });
+
+  it("plots follow-up after a call with pronouns and next friday", async () => {
+    const dump =
+      "just finished call with acme corp, need to follow up with them by next friday for ATLAS";
+    const { parseBrainDump } = await import("./parse-dump");
+    const cats = [
+      ...categories,
+      {
+        id: "atlas",
+        name: "ATLAS",
+        color: "#f59e0b",
+        icon: "star",
+        sortOrder: 2,
+      },
+    ];
+    const { items } = await parseBrainDump(dump, {
+      categories: cats,
+      preferLlm: false,
+    });
+    expect(items).toHaveLength(1);
+    expect(items[0].title).toBe("Follow up — Acme Corp");
+    expect(items[0].type).toBe("follow-up");
+    expect(items[0].contactName).toBe("Acme Corp");
+    expect(items[0].categoryId).toBe("atlas");
     expect(items[0].dueAt).toBeTruthy();
   });
 

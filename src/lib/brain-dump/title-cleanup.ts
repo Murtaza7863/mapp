@@ -49,7 +49,7 @@ function capitalizeContact(name: string): string {
 }
 
 const CONTEXT_CLAUSE_RES = [
-  /^(?:just\s+)?(?:finished|had|wrapped up|got off|completed)\s+(?:a\s+)?(?:call|meeting|chat|sync)\s+with\s+(.+)$/i,
+  /^(?:just\s+)?(?:finished|had|wrapped up|got off|completed)\s+(?:a\s+)?(?:call|meeting|chat|sync|demo|presentation)\s+with\s+(.+)$/i,
   /^(?:just\s+)?(?:talked|spoke)\s+(?:to|with)\s+(.+)$/i,
   /^(?:just\s+)?met\s+with\s+(.+)$/i,
 ];
@@ -72,12 +72,28 @@ export function parseContextClause(
 
 export const CONTEXT_MERGE_SEP = " || ";
 
+export function splitContextTaskLine(line: string): {
+  taskLine: string;
+  contextContact?: string;
+} {
+  if (!line.includes(CONTEXT_MERGE_SEP)) {
+    return { taskLine: line };
+  }
+  const [contextPart, taskPart] = line.split(CONTEXT_MERGE_SEP, 2);
+  const context = parseContextClause(contextPart.trim());
+  if (!context || !taskPart?.trim()) {
+    return { taskLine: line };
+  }
+  return { taskLine: taskPart.trim(), contextContact: context.contactName };
+}
+
 export function polishTitle(
   title: string,
   _raw: string,
   type: ItemType,
   contactName?: string,
   contextContact?: string,
+  categoryNames: string[] = [],
 ): string {
   let t = title.trim();
 
@@ -86,9 +102,27 @@ export function polishTitle(
   t = t.replace(STRAY_WEEKDAY, " ");
   t = t.replace(TRAILING_TIME, "");
   t = t.replace(/\b(?:due|by)\s*$/i, "");
+  t = t.replace(/\bby\s+next\s*$/i, "");
   t = t.replace(/\s+/g, " ").trim();
 
+  const who = contextContact ?? contactName;
+  if (who) {
+    t = t.replace(/\b(them|they|him|her|it)\b/gi, who);
+  }
+
   if (type === "follow-up") {
+    const forSubject = t.match(/\bfor\s+(.+)$/i);
+    if (forSubject && who) {
+      const subject = forSubject[1].trim();
+      const isArea = categoryNames.some(
+        (name) => name.toLowerCase() === subject.toLowerCase(),
+      );
+      if (!isArea && subject.length > 1) {
+        return capitalize(`${who} — ${subject}`);
+      }
+      t = t.replace(/\bfor\s+.+$/i, "").trim();
+    }
+
     const aboutMatch = t.match(/^(.+?)\s+(?:about|re:|regarding)\s+(.+)$/i);
     if (aboutMatch) {
       const who = (contactName ?? aboutMatch[1])
@@ -102,6 +136,36 @@ export function polishTitle(
     }
 
     t = t.replace(ACTION_PREFIX, "");
+    t = t.replace(/^with\s+/i, "").trim();
+    if (
+      who &&
+      (!t || t.toLowerCase() === who.toLowerCase() || /^follow\s*up$/i.test(t))
+    ) {
+      return capitalize(`Follow up — ${who}`);
+    }
+
+    if (!who && t && !t.includes(" ") && type === "follow-up") {
+      return capitalize(`Follow up — ${t}`);
+    }
+
+    if (type === "follow-up" && /^waiting\s+on\b/i.test(_raw)) {
+      const waiting = _raw.match(/\bwaiting\s+on\s+([A-Za-z][\w\s.-]+)/i);
+      const subject = _raw.match(/\bfor\s+(.+)$/i);
+      if (waiting) {
+        const whoName = waiting[1].trim();
+        if (subject) {
+          const subjectText = subject[1].trim();
+          const subjectIsArea = categoryNames.some(
+            (name) => name.toLowerCase() === subjectText.toLowerCase(),
+          );
+          if (!subjectIsArea && subjectText.length > 1) {
+            return capitalize(`${whoName} — ${subjectText}`);
+          }
+        }
+        return capitalize(`Waiting on ${whoName}`);
+      }
+    }
+
     const verbMatch = t.match(VERB_PREFIX);
     if (verbMatch) {
       const rest = t.replace(VERB_PREFIX, "").trim();
@@ -125,7 +189,6 @@ export function polishTitle(
     .replace(/\s*[,.\-–—]+$/, "")
     .trim();
 
-  const who = contextContact ?? contactName;
   if (who && type === "follow-up") {
     const lower = t.toLowerCase();
     const whoLower = who.toLowerCase();
@@ -222,7 +285,7 @@ export function looksLikeTaskSegment(segment: string): boolean {
   }
 
   return (
-    /\b(email|call|submit|finish|send|pay|buy|book|prep|study|review|follow|meet|complete|write|read|fix|pack|return|schedule|apply|gym|homework|exam|rent)\b/i.test(
+    /\b(email|call|submit|finish|send|pay|buy|book|prep|study|review|follow|meet|complete|write|read|fix|pack|return|schedule|apply|gym|homework|exam|rent|check|waiting|bump|reach)\b/i.test(
       s,
     ) || s.split(/\s+/).length >= 3
   );

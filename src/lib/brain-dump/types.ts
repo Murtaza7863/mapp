@@ -1,5 +1,7 @@
 import type { ItemType, PipelineStage } from "../../types";
 
+import type { PlotStructure } from "./structure-parser";
+
 /** App capabilities Plot can apply from a dump (not task items). */
 export type AppFeatureId = "create_folder" | "create_area";
 
@@ -19,6 +21,10 @@ export interface ProposedItem {
   contactName?: string;
   pipelineStage?: PipelineStage;
   selected: boolean;
+  /** Hierarchy Plot will create or use when saving */
+  structure?: PlotStructure;
+  /** Human-readable plan notes for the confirm sheet */
+  planNotes?: string[];
 }
 
 /** App-feature intents (create folder/area) — not reminder items. */
