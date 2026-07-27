@@ -16,6 +16,7 @@ interface Props {
   actions: ProposedFeatureAction[];
   clarifications: string[];
   source: "llm" | "rules";
+  modelLabel?: string | null;
   categories: Category[];
   onChangeItems: (items: ProposedItem[]) => void;
   onChangeActions: (actions: ProposedFeatureAction[]) => void;
@@ -35,6 +36,7 @@ export function ParseConfirmSheet({
   actions,
   clarifications,
   source,
+  modelLabel,
   categories,
   onChangeItems,
   onChangeActions,
@@ -89,9 +91,16 @@ export function ParseConfirmSheet({
         <div className="p-5">
           <div className="mb-4 flex items-start justify-between gap-3">
             <div>
-              <h3 className="text-primary text-lg font-semibold">
-                Check before adding
-              </h3>
+              <div className="mb-1 flex flex-wrap items-center gap-2">
+                <h3 className="text-primary text-lg font-semibold">
+                  Check before adding
+                </h3>
+                {source === "llm" && modelLabel && !refining && (
+                  <span className="ai-confirm-badge">
+                    {modelLabel} · on-device
+                  </span>
+                )}
+              </div>
               <p className="text-muted mt-1 text-xs">
                 {refining
                   ? "Refining with on-device AI…"

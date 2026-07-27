@@ -5,6 +5,7 @@ import type { ParseDumpResult } from "../lib/brain-dump/types";
 import type { FeedEntry, FeedFocus } from "../lib/feed";
 import type { Item } from "../types";
 
+import { AiBriefingCard } from "../components/AiBriefingCard";
 import { EventDeadlinesSection } from "../components/EventDeadlinesSection";
 import { StarIcon } from "../components/icons";
 import { ItemForm, SnoozeSheet } from "../components/ItemForm";
@@ -289,6 +290,16 @@ export function TodayView() {
           Add item
         </button>
       </div>
+
+      <AiBriefingCard
+        items={items}
+        briefing={briefing}
+        onFocusNudge={() => setFeedFocus("chase")}
+        onFocusOverdue={() => setFeedFocus("overdue")}
+        onFocusPrep={() => setFeedFocus("prep")}
+        onWrapUp={() => setWrapUpOpen(true)}
+        showWrapUp={isWrapUpTime()}
+      />
 
       <PlotBar
         categories={categories}

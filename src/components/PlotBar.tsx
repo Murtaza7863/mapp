@@ -3,14 +3,23 @@ import { useEffect, useRef, useState } from "react";
 import type { ParseDumpResult } from "../lib/brain-dump/types";
 import type { Category } from "../types";
 
-import { checkWebGPU, warmupPlotEngine } from "../lib/brain-dump/llm-engine";
+import {
+  checkWebGPU,
+  friendlyModelLabel,
+  getLoadedPlotModelId,
+  warmupPlotEngine,
+} from "../lib/brain-dump/llm-engine";
 import {
   parseRulesDump,
   refineDumpWithLlm,
   shouldUseLlm,
 } from "../lib/brain-dump/parse-dump";
 import { readClipboardText } from "../lib/clipboard";
+import { isSpeechRecognitionSupported, listenForSpeech } from "../lib/speech";
+import { MicIcon } from "./icons";
+import { OnDeviceAiBadge } from "./OnDeviceAiBadge";
 import { ParseConfirmSheet } from "./ParseConfirmSheet";
+import { PlotDemoChips } from "./PlotDemoChips";
 import { ResolveStrip } from "./ResolveStrip";
 
 interface Props {
@@ -40,8 +49,14 @@ export function PlotBar({ categories, onParsed, initialText }: Props) {
   const [refining, setRefining] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showSpinner, setShowSpinner] = useState(false);
+  const [listening, setListening] = useState(false);
+  const [modelLabel, setModelLabel] = useState<string | null>(null);
   const userEditedRef = useRef(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const stopListenRef = useRef<(() => void) | null>(null);
+  const voiceBaseRef = useRef("");
+
+  const speechSupported = isSpeechRecognitionSupported();
 
   useEffect(() => {
     void checkWebGPU().then((ok) => {
@@ -57,6 +72,10 @@ export function PlotBar({ categories, onParsed, initialText }: Props) {
     }
   }, [initialText]);
 
+  useEffect(() => {
+    return () => stopListenRef.current?.();
+  }, []);
+
   const paste = async () => {
     const text = await readClipboardText();
     if (!text) return;
@@ -65,8 +84,38 @@ export function PlotBar({ categories, onParsed, initialText }: Props) {
     inputRef.current?.focus();
   };
 
+  const toggleVoice = () => {
+    if (listening) {
+      stopListenRef.current?.();
+      stopListenRef.current = null;
+      setListening(false);
+      return;
+    }
+
+    voiceBaseRef.current = value.trim() ? `${value.trim()} ` : "";
+    setListening(true);
+    setError(null);
+    setExpanded(true);
+
+    stopListenRef.current = listenForSpeech({
+      onPartial: (text) => setValue(voiceBaseRef.current + text),
+      onFinal: (text) => {
+        setValue(voiceBaseRef.current + text);
+        setListening(false);
+        stopListenRef.current = null;
+        inputRef.current?.focus();
+      },
+      onError: (msg) => {
+        setError(msg);
+        setListening(false);
+        stopListenRef.current = null;
+      },
+    });
+  };
+
   const barBusy = phase === "loading";
-  const canSubmit = value.trim().length > 0 && !barBusy && !saving;
+  const canSubmit =
+    value.trim().length > 0 && !barBusy && !saving && !listening;
 
   useEffect(() => {
     if (!barBusy) {
@@ -77,13 +126,14 @@ export function PlotBar({ categories, onParsed, initialText }: Props) {
     return () => window.clearTimeout(timer);
   }, [barBusy]);
 
-  const runPlot = async () => {
-    if (!canSubmit) return;
+  const runPlot = async (textOverride?: string) => {
+    const trimmed = (textOverride ?? value).trim();
+    if (!trimmed || barBusy || saving) return;
+
     setError(null);
     setStatusText(null);
     userEditedRef.current = false;
 
-    const trimmed = value.trim();
     const rulesResult = parseRulesDump(trimmed, categories);
     const hasRules =
       rulesResult.items.length > 0 || rulesResult.actions.length > 0;
@@ -119,6 +169,8 @@ export function PlotBar({ categories, onParsed, initialText }: Props) {
           setStatusText(modelStatusText(report));
         },
       );
+
+      setModelLabel(friendlyModelLabel(getLoadedPlotModelId()));
 
       if (!hasRules) {
         if (
@@ -177,12 +229,27 @@ export function PlotBar({ categories, onParsed, initialText }: Props) {
     }
   };
 
+  const tryDemo = (text: string) => {
+    setValue(text);
+    setExpanded(true);
+    void runPlot(text);
+  };
+
   return (
     <>
       <section className="capture-hero" aria-label="Add to calendar">
+        <div className="capture-hero-header">
+          <OnDeviceAiBadge />
+        </div>
+
+        <PlotDemoChips
+          onSelect={tryDemo}
+          disabled={barBusy || saving || listening}
+        />
+
         <div className="compose-bar-wrap">
           <div
-            className={`compose-bar ${expanded ? "compose-bar-expanded" : ""} ${barBusy ? "compose-bar-busy" : ""}`}
+            className={`compose-bar ${expanded ? "compose-bar-expanded" : ""} ${barBusy ? "compose-bar-busy" : ""} ${listening ? "compose-bar-listening" : ""}`}
           >
             <textarea
               ref={inputRef}
@@ -194,18 +261,33 @@ export function PlotBar({ categories, onParsed, initialText }: Props) {
               }}
               onFocus={() => setExpanded(true)}
               onKeyDown={onKeyDown}
-              placeholder="Dentist Tuesday 3pm, email Jake Friday…"
+              placeholder={
+                listening
+                  ? "Listening…"
+                  : "Dentist Tuesday 3pm, email Jake Friday…"
+              }
               className="compose-bar-input"
               aria-label="Type a plan to add to calendar"
               disabled={barBusy || saving}
             />
             <div className="compose-bar-actions">
+              {speechSupported && (
+                <button
+                  type="button"
+                  onClick={toggleVoice}
+                  className={`compose-bar-secondary compose-bar-mic ${listening ? "compose-bar-mic-active" : ""}`}
+                  aria-label={listening ? "Stop listening" : "Voice input"}
+                  disabled={barBusy || saving}
+                >
+                  <MicIcon className="h-4 w-4" />
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => void paste()}
                 className="compose-bar-secondary"
                 aria-label="Paste from clipboard"
-                disabled={barBusy || saving}
+                disabled={barBusy || saving || listening}
               >
                 Paste
               </button>
@@ -227,6 +309,11 @@ export function PlotBar({ categories, onParsed, initialText }: Props) {
           {statusText && barBusy && (
             <p className="compose-bar-status">{statusText}</p>
           )}
+          {listening && (
+            <p className="compose-bar-status compose-bar-listening-label">
+              Voice → Plot · on-device
+            </p>
+          )}
           {error && <p className="compose-bar-error">{error}</p>}
         </div>
         <ResolveStrip text={value} categories={categories} />
@@ -239,6 +326,7 @@ export function PlotBar({ categories, onParsed, initialText }: Props) {
           actions={result.actions}
           clarifications={result.clarifications}
           source={result.source}
+          modelLabel={modelLabel}
           categories={categories}
           refining={refining}
           saving={saving}

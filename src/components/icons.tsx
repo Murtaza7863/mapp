@@ -219,6 +219,24 @@ export function SparkIcon({ className, style }: IconProps) {
   );
 }
 
+export function MicIcon({ className, style }: IconProps) {
+  return (
+    <svg {...base} className={className} style={style}>
+      <path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3z" />
+      <path d="M19 11a7 7 0 0 1-14 0M12 18v3" />
+    </svg>
+  );
+}
+
+export function CpuIcon({ className, style }: IconProps) {
+  return (
+    <svg {...base} className={className} style={style}>
+      <rect x="7" y="7" width="10" height="10" rx="1.5" />
+      <path d="M9 2v3M12 2v3M15 2v3M9 19v3M12 19v3M15 19v3M2 9h3M2 12h3M2 15h3M19 9h3M19 12h3M19 15h3" />
+    </svg>
+  );
+}
+
 export type CategoryIconKey =
   | "briefcase"
   | "home"

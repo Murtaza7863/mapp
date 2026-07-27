@@ -59,8 +59,33 @@ export function pickPlotModelId(): string {
   return config.plot.models.primary;
 }
 
-export function getLoadedPlotModelId(): string | null {
-  return loadedModelId;
+let modelReadyListeners = new Set<() => void>();
+
+function notifyModelReady(): void {
+  for (const listener of modelReadyListeners) listener();
+}
+
+export function onPlotModelReady(listener: () => void): () => void {
+  modelReadyListeners.add(listener);
+  return () => modelReadyListeners.delete(listener);
+}
+
+/** Human-readable model name for UI badges. */
+export function friendlyModelLabel(modelId: string | null): string {
+  if (!modelId) return "On-device AI";
+  if (modelId.includes("Llama-3.2")) return "Llama 3.2";
+  if (modelId.includes("SmolLM2-1.7B")) return "SmolLM2 1.7B";
+  if (modelId.includes("SmolLM2-360M")) return "SmolLM2";
+  return "Local LLM";
+}
+
+export type PlotEngineState = "unsupported" | "loading" | "ready";
+
+export function getPlotEngineState(): PlotEngineState {
+  if (webgpuCache === false) return "unsupported";
+  if (loadedModelId) return "ready";
+  if (enginePromise) return "loading";
+  return webgpuCache === true ? "loading" : "unsupported";
 }
 
 async function createEngine(
@@ -101,6 +126,7 @@ export async function loadPlotEngine(
       try {
         const engine = await createEngine(modelId, onProgress);
         loadedModelId = modelId;
+        notifyModelReady();
         return engine;
       } catch (err) {
         lastError = err;
@@ -185,4 +211,43 @@ export function warmupPlotEngine(): void {
   void checkWebGPU().then((ok) => {
     if (ok) void loadPlotEngine();
   });
+}
+
+export interface AiInsightRequest {
+  briefing: {
+    overdue: number;
+    dueToday: number;
+    needsNudge: number;
+    urgentPrep: number;
+  };
+  topTasks: string[];
+}
+
+const BRIEFING_SYSTEM = `You are a concise planner on a user's phone. Write ONE short sentence (max 35 words) of specific, actionable advice based on their task stats. No greetings, no bullet points, no markdown.`;
+
+export async function generateAiInsight(
+  request: AiInsightRequest,
+): Promise<string> {
+  const engine = await loadPlotEngine();
+  const { briefing, topTasks } = request;
+  const user = `Stats: ${briefing.dueToday} due today, ${briefing.overdue} overdue, ${briefing.needsNudge} threads to nudge, ${briefing.urgentPrep} event prep deadlines.
+Top tasks: ${topTasks.length > 0 ? topTasks.join("; ") : "none"}.
+One sentence of advice:`;
+
+  const response = await engine.chat.completions.create({
+    messages: [
+      { role: "system", content: BRIEFING_SYSTEM },
+      { role: "user", content: user },
+    ],
+    temperature: 0.35,
+    max_tokens: 80,
+  });
+
+  const content = response.choices[0]?.message?.content?.trim();
+  if (!content) throw new Error("Empty AI briefing");
+  return content.replace(/^["']|["']$/g, "");
+}
+
+export function getLoadedPlotModelId(): string | null {
+  return loadedModelId;
 }
