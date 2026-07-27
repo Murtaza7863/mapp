@@ -5,8 +5,8 @@ import { Link } from "react-router-dom";
 
 import { CategoryBadge } from "../components/CategoryBadge";
 import { TypeBadge } from "../components/TypeBadge";
-import { WeeklyReviewSheet } from "../components/WeeklyReviewSheet";
 import { PageHeader } from "../components/ui";
+import { WeeklyReviewSheet } from "../components/WeeklyReviewSheet";
 import { db } from "../db";
 import { useCategories } from "../hooks/useCategories";
 import { useCompletions, useItems } from "../hooks/useItems";
@@ -75,11 +75,7 @@ export function InsightsView() {
           to="/history"
         />
         <StatCard label="Streak" value={`${insights.streakDays}d`} />
-        <StatCard
-          label="Pending"
-          value={pending}
-          to="/search?status=pending"
-        />
+        <StatCard label="Pending" value={pending} to="/search?status=pending" />
         <StatCard label="Completed" value={done} to="/search?status=done" />
       </div>
 
@@ -104,7 +100,7 @@ export function InsightsView() {
           ).map((type) => (
             <div
               key={type}
-              className="bg-zinc-950 flex items-center justify-between rounded-xl px-4 py-3"
+              className="item-card flex items-center justify-between rounded-xl px-4 py-3"
             >
               <TypeBadge type={type} />
               <span className="text-primary font-medium">
@@ -124,7 +120,7 @@ export function InsightsView() {
             {insights.completionsByCategory.map(({ category, count }) => (
               <div
                 key={category.id}
-                className="bg-zinc-950 flex items-center justify-between rounded-xl px-4 py-3"
+                className="item-card flex items-center justify-between rounded-xl px-4 py-3"
               >
                 <CategoryBadge category={category} size="md" />
                 <span className="text-primary font-medium">{count}</span>
@@ -134,7 +130,7 @@ export function InsightsView() {
         </section>
       )}
 
-      <section className="border-zinc-900 bg-zinc-950/50 rounded-xl border p-4">
+      <section className="item-card rounded-xl p-4">
         <h2 className="mb-2 font-semibold">Overview</h2>
         <p className="text-muted text-sm">
           {total} items · {completions.length} completions logged

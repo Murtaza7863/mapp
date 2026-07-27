@@ -55,11 +55,11 @@ export function NotesView() {
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Filter notes…"
-        className="border-zinc-800 bg-zinc-950 text-primary placeholder:text-muted mb-4 w-full rounded-xl border px-4 py-3 outline-none"
+        className="input-field placeholder:text-muted mb-4 w-full rounded-xl px-4 py-3 outline-none"
       />
 
       {notes.length === 0 ? (
-        <div className="border-zinc-800 text-muted rounded-2xl border border-dashed p-8 text-center">
+        <div className="empty-state text-muted rounded-2xl p-8 text-center">
           No notes yet
         </div>
       ) : (
@@ -67,7 +67,7 @@ export function NotesView() {
           {notes.map((note) => (
             <div
               key={note.id}
-              className="border-zinc-900 bg-zinc-950/60 cursor-pointer rounded-xl border p-4"
+              className="item-card cursor-pointer rounded-xl p-4"
               onClick={() => setEditItem(note)}
             >
               <div className="flex items-start justify-between gap-2">

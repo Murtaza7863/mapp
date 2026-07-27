@@ -239,7 +239,7 @@ export function ContainerDetailView() {
         <button
           type="button"
           onClick={() => openAddChild(hasSubgroups ? subgroups[0] : undefined)}
-          className="border-zinc-800 text-muted w-full rounded-xl border border-dashed py-3"
+          className="empty-state text-muted w-full rounded-xl py-3"
         >
           + Add task
         </button>

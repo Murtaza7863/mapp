@@ -186,7 +186,7 @@ export function SearchView() {
       <button
         type="button"
         onClick={() => setShowForm(true)}
-        className="border-zinc-800 text-muted mt-4 w-full rounded-xl border border-dashed py-3"
+        className="empty-state text-muted mt-4 w-full rounded-xl py-3"
       >
         + Add item
       </button>

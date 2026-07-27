@@ -61,14 +61,14 @@ export function HistoryView() {
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Search completed items…"
-        className="border-zinc-800 bg-zinc-950 text-primary placeholder:text-muted mb-3 w-full rounded-xl border px-4 py-3 outline-none"
+        className="input-field placeholder:text-muted mb-3 w-full rounded-xl px-4 py-3 outline-none"
       />
 
       <div className="mb-4 flex flex-wrap gap-2">
         <select
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value)}
-          className="border-zinc-800 bg-zinc-900 text-primary rounded-lg border px-2 py-1.5 text-xs"
+          className="input-field text-primary rounded-lg px-2 py-1.5 text-xs"
         >
           <option value="all">All types</option>
           {Object.entries(ITEM_TYPE_LABELS).map(([k, v]) => (
@@ -83,7 +83,7 @@ export function HistoryView() {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="border-zinc-800 text-muted rounded-2xl border border-dashed p-8 text-center">
+        <div className="empty-state text-muted rounded-2xl p-8 text-center">
           {query ? "No matches" : "Nothing completed yet"}
         </div>
       ) : (
@@ -94,10 +94,7 @@ export function HistoryView() {
             </h2>
             <div className="space-y-2">
               {entries.map((entry) => (
-                <div
-                  key={entry.id}
-                  className="border-zinc-900 bg-zinc-950/50 rounded-xl border p-4"
-                >
+                <div key={entry.id} className="item-card rounded-xl p-4">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
                       <h3 className="text-primary font-medium">
@@ -113,9 +110,7 @@ export function HistoryView() {
                         {formatCompleted(entry.completedAt)}
                       </p>
                       {entry.notes && (
-                        <p className="text-muted mt-1 text-xs">
-                          {entry.notes}
-                        </p>
+                        <p className="text-muted mt-1 text-xs">{entry.notes}</p>
                       )}
                       <button
                         type="button"

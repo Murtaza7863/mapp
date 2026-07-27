@@ -225,9 +225,7 @@ export function SettingsView() {
 
         {settings?.digestEnabled && (
           <label className="mt-2 block">
-            <span className="text-muted mb-1 block text-xs">
-              Digest time
-            </span>
+            <span className="text-muted mb-1 block text-xs">Digest time</span>
             <input
               type="time"
               value={settings.digestTime}
@@ -235,7 +233,7 @@ export function SettingsView() {
                 await updateSettings({ digestTime: e.target.value });
                 await syncNotificationSchedule();
               }}
-              className="border-zinc-800 bg-zinc-900 rounded-lg border px-3 py-2"
+              className="input-field rounded-lg px-3 py-2"
             />
           </label>
         )}
@@ -255,7 +253,7 @@ export function SettingsView() {
                 defaultReminderOffsetMinutes: Number(e.target.value),
               })
             }
-            className="border-zinc-800 bg-zinc-900 text-primary w-full rounded-lg border px-3 py-2"
+            className="input-field text-primary w-full rounded-lg px-3 py-2"
           >
             {REMINDER_OFFSET_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
@@ -276,7 +274,7 @@ export function SettingsView() {
                 defaultCategoryId: e.target.value || undefined,
               })
             }
-            className="border-zinc-800 bg-zinc-900 text-primary w-full rounded-lg border px-3 py-2"
+            className="input-field text-primary w-full rounded-lg px-3 py-2"
           >
             <option value="">Ask each time</option>
             {categories.map((c) => (
@@ -380,7 +378,7 @@ export function SettingsView() {
         <button
           type="button"
           onClick={handleExport}
-          className="border-zinc-800 text-primary mb-3 w-full rounded-xl border py-3"
+          className="btn-ghost text-primary mb-3 w-full rounded-xl py-3"
         >
           Export all JSON
         </button>
@@ -399,7 +397,7 @@ export function SettingsView() {
             ))}
           </div>
         )}
-        <label className="border-zinc-800 text-primary block w-full cursor-pointer rounded-xl border py-3 text-center">
+        <label className="btn-ghost text-primary block w-full cursor-pointer rounded-xl py-3 text-center">
           Import JSON
           <input
             type="file"
@@ -413,7 +411,7 @@ export function SettingsView() {
         )}
       </section>
 
-      <section className="border-zinc-900 bg-zinc-950/50 text-muted rounded-xl border p-4 text-sm">
+      <section className="item-card text-muted rounded-xl p-4 text-sm">
         <h2 className="text-primary mb-2 font-semibold">About</h2>
         <p>Local storage only. Data stays on this device.</p>
         <p className="mt-2">Device ID: {settings?.deviceId?.slice(0, 8)}…</p>

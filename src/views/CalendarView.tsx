@@ -104,7 +104,7 @@ export function CalendarView() {
         <button
           type="button"
           onClick={() => navigate(-1)}
-          className="text-zinc-400 px-2"
+          className="text-muted px-2"
         >
           ‹
         </button>
@@ -112,13 +112,13 @@ export function CalendarView() {
         <button
           type="button"
           onClick={() => navigate(1)}
-          className="text-zinc-400 px-2"
+          className="text-muted px-2"
         >
           ›
         </button>
       </div>
 
-      <div className="text-zinc-500 mb-2 grid grid-cols-7 text-center text-[10px] font-medium">
+      <div className="text-muted mb-2 grid grid-cols-7 text-center text-[10px] font-medium">
         {(weekStartsOnMonday
           ? ["M", "T", "W", "T", "F", "S", "S"]
           : ["S", "M", "T", "W", "T", "F", "S"]
@@ -141,11 +141,11 @@ export function CalendarView() {
               onClick={() => setSelectedDay(day)}
               className={`relative aspect-square rounded-xl text-sm transition-colors ${
                 selected
-                  ? "bg-[#8b7cf8] font-semibold text-[#0c0a14]"
+                  ? "bg-[#ff7a59] font-semibold text-[#1a0f0a]"
                   : inMonth
-                    ? "text-zinc-300 hover:bg-white/5"
-                    : "text-zinc-600"
-              } ${isToday && !selected ? "ring-1 ring-[#8b7cf8]/40" : ""}`}
+                    ? "text-primary hover:bg-white/5"
+                    : "text-muted"
+              } ${isToday && !selected ? "ring-1 ring-[#ff7a59]/40" : ""}`}
             >
               {format(day, "d")}
               {dayEntries.length > 0 && (
@@ -174,11 +174,11 @@ export function CalendarView() {
 
       {selectedDay && (
         <section className="section-block">
-          <h2 className="text-zinc-400 text-sm font-semibold">
+          <h2 className="text-muted text-sm font-semibold">
             {format(selectedDay, "EEEE, MMM d")}
           </h2>
           {selectedEntries.length === 0 ? (
-            <p className="text-zinc-500 text-sm">Nothing scheduled</p>
+            <p className="text-muted text-sm">Nothing scheduled</p>
           ) : (
             <div className="item-list">
               {selectedEntries.map((entry) => (
@@ -261,7 +261,7 @@ function CalendarDayItem({
   return (
     <div>
       {entry.label && (
-        <p className="text-zinc-600 mb-0.5 text-[10px] font-medium uppercase">
+        <p className="text-muted mb-0.5 text-[10px] font-medium uppercase">
           {entry.label}
         </p>
       )}

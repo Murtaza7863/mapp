@@ -17,7 +17,7 @@ export function WrapUpSheet({
 }: Props) {
   return (
     <div
-      className="bg-overlay fixed inset-0 z-50 flex items-end "
+      className="bg-overlay fixed inset-0 z-50 flex items-end"
       onClick={onClose}
     >
       <div
@@ -69,7 +69,7 @@ export function WrapUpSheet({
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="bg-zinc-950 rounded-xl px-3 py-2 text-center">
+    <div className="item-card rounded-xl px-3 py-2 text-center">
       <p className="text-muted text-[10px] uppercase">{label}</p>
       <p className="text-primary text-xl font-semibold tabular-nums">{value}</p>
     </div>

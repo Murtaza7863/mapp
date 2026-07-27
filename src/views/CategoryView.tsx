@@ -400,7 +400,7 @@ export function CategoryView() {
       )}
 
       {selectedId === "all" ? (
-        <p className="text-muted border-zinc-800 rounded-xl border border-dashed px-4 py-3.5 text-center text-sm">
+        <p className="text-muted empty-state rounded-xl px-4 py-3.5 text-center text-sm">
           Select an area above to add tasks or folders
         </p>
       ) : (
@@ -408,14 +408,14 @@ export function CategoryView() {
           <button
             type="button"
             onClick={() => setShowFolderForm(true)}
-            className="border-zinc-800 text-muted flex-1 rounded-xl border border-dashed py-3.5"
+            className="empty-state text-muted flex-1 rounded-xl py-3.5"
           >
             + New folder
           </button>
           <button
             type="button"
             onClick={() => setShowForm(true)}
-            className="border-zinc-800 text-muted flex-1 rounded-xl border border-dashed py-3.5"
+            className="empty-state text-muted flex-1 rounded-xl py-3.5"
           >
             + Add task
           </button>
