@@ -16,6 +16,7 @@ import {
 } from "../lib/export";
 import {
   registerPushSubscription,
+  sendTestNotification,
   syncNotificationSchedule,
   unregisterPushSubscription,
 } from "../lib/notifications";
@@ -40,6 +41,7 @@ export function SettingsView() {
   const [notifyPermission, setNotifyPermission] = useState(
     typeof Notification !== "undefined" ? Notification.permission : "default",
   );
+  const [testing, setTesting] = useState(false);
 
   useEffect(() => {
     void storageSummary().then(setStorageInfo);
@@ -73,6 +75,19 @@ export function SettingsView() {
       result.ok ? "Schedule synced" : (result.reason ?? "Sync failed"),
       result.ok ? "success" : "error",
     );
+  };
+
+  const handleTestNotification = async () => {
+    setTesting(true);
+    try {
+      const result = await sendTestNotification();
+      showStatus(
+        result.ok ? "Sent — it should arrive in a moment" : result.reason,
+        result.ok ? "success" : "error",
+      );
+    } finally {
+      setTesting(false);
+    }
   };
 
   const handleAreaExport = async (categoryId: string, name: string) => {
@@ -165,8 +180,8 @@ export function SettingsView() {
         <h2 className="mb-3 font-semibold">Notifications</h2>
         {!pushConfigured && (
           <p className="text-warn mb-3 text-sm">
-            Reminders are off on this build. Everything else works offline;
-            setup steps are in the README.
+            Reminders are off on this build — they need the push worker
+            deployed. Everything else works offline; see the README for setup.
           </p>
         )}
         <dl className="text-muted mb-4 space-y-2 text-sm">
@@ -203,6 +218,16 @@ export function SettingsView() {
             Disable notifications
           </button>
         )}
+        <button
+          type="button"
+          onClick={handleTestNotification}
+          disabled={
+            !pushConfigured || !settings?.notificationsEnabled || testing
+          }
+          className="btn-ghost mb-2 w-full rounded-xl py-3 disabled:opacity-40"
+        >
+          {testing ? "Sending…" : "Send a test notification"}
+        </button>
         <button
           type="button"
           onClick={handleSync}

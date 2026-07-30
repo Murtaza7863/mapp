@@ -34,6 +34,11 @@ jobs:
       - name: Build
         env:
           BASE_PATH: /mapp/
+          # Set these as repository variables to turn reminders on. Both are
+          # public values that end up in the client bundle; the matching VAPID
+          # private key stays a secret on the push worker.
+          VITE_PUSH_API_URL: ${{ vars.VITE_PUSH_API_URL }}
+          VITE_VAPID_PUBLIC_KEY: ${{ vars.VITE_VAPID_PUBLIC_KEY }}
         run: npm run build
 
       - name: Upload Pages artifact

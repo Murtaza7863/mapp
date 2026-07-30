@@ -10,6 +10,14 @@ const API_BASE = config.push.apiUrl;
 
 export type PushSetupResult = { ok: true } | { ok: false; reason: string };
 
+export function currentTimeZone(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+  } catch {
+    return "UTC";
+  }
+}
+
 export function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
@@ -179,6 +187,8 @@ export async function syncNotificationSchedule(): Promise<{
         deviceId: settings.deviceId,
         digestEnabled: settings.digestEnabled,
         digestTime: settings.digestTime,
+        // The worker runs in UTC and cannot guess when "08:00" is for you.
+        timeZone: currentTimeZone(),
         notifications: scheduled,
       }),
     });
@@ -200,6 +210,37 @@ export async function syncNotificationSchedule(): Promise<{
   }
 }
 
+/** Proves delivery works now, rather than waiting for a real reminder. */
+export async function sendTestNotification(): Promise<PushSetupResult> {
+  if (!isPushConfigured()) {
+    return { ok: false, reason: "Push is not configured for this build." };
+  }
+
+  const settings = await getSettings();
+  if (!settings.notificationsEnabled) {
+    return { ok: false, reason: "Turn notifications on first." };
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/test`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ deviceId: settings.deviceId }),
+    });
+    if (res.ok) return { ok: true };
+
+    const body = (await res.json().catch(() => null)) as {
+      error?: string;
+    } | null;
+    return { ok: false, reason: body?.error ?? "Could not reach the server." };
+  } catch (err) {
+    return {
+      ok: false,
+      reason: err instanceof Error ? err.message : "Test failed.",
+    };
+  }
+}
+
 export async function unregisterPushSubscription(): Promise<PushSetupResult> {
   if (!isPushConfigured()) {
     await db.settings.update("app", { notificationsEnabled: false });
@@ -210,6 +251,18 @@ export async function unregisterPushSubscription(): Promise<PushSetupResult> {
     const registration = await navigator.serviceWorker.ready;
     const subscription = await registration.pushManager.getSubscription();
     if (subscription) await subscription.unsubscribe();
+  } catch {
+    /* best effort */
+  }
+
+  // Without this the worker keeps pushing to a subscription we abandoned.
+  try {
+    const settings = await getSettings();
+    await fetch(`${API_BASE}/unsubscribe`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ deviceId: settings.deviceId }),
+    });
   } catch {
     /* best effort */
   }

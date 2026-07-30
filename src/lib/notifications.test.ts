@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { createItem } from "./items";
-import { buildScheduledNotifications } from "./notifications";
+import { buildScheduledNotifications, currentTimeZone } from "./notifications";
 
 describe("buildScheduledNotifications", () => {
   const now = new Date("2026-07-26T12:00:00").getTime();
@@ -49,5 +49,30 @@ describe("buildScheduledNotifications", () => {
     });
     const scheduled = buildScheduledNotifications([thread], now);
     expect(scheduled.some((s) => s.id.endsWith("-chase"))).toBe(true);
+  });
+
+  it("gives every reminder a deep link for the tap target", () => {
+    const thread = createItem({
+      title: "Revisit Google deal",
+      type: "follow-up",
+      checkBackAt: new Date("2026-07-27T09:00:00").toISOString(),
+    });
+    const scheduled = buildScheduledNotifications([thread], now);
+
+    expect(scheduled.length).toBeGreaterThan(0);
+    for (const entry of scheduled) {
+      expect(entry.url).toMatch(/^\//);
+    }
+  });
+});
+
+describe("currentTimeZone", () => {
+  it("reports an IANA zone the worker can resolve", () => {
+    // The worker runs in UTC, so the digest time is meaningless without this.
+    const zone = currentTimeZone();
+    expect(zone).toBeTruthy();
+    expect(() =>
+      new Intl.DateTimeFormat("en-CA", { timeZone: zone }).format(new Date()),
+    ).not.toThrow();
   });
 });

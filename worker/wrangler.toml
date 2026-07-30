@@ -1,21 +1,21 @@
 name = "mapp-push"
 main = "src/index.ts"
-compatibility_date = "2024-01-01"
-node_compat = true
+compatibility_date = "2024-09-23"
 
+# Runs every minute. Reminders are only as punctual as this interval, and the
+# delivery lookback window in src/delivery.ts must stay larger than it.
 [triggers]
-crons = ["*/5 * * * *"]
+crons = ["* * * * *"]
 
 [[kv_namespaces]]
 binding = "KV"
 id = "REPLACE_WITH_KV_ID"
-preview_id = "REPLACE_WITH_PREVIEW_KV_ID"
 
 [vars]
 VAPID_SUBJECT = "mailto:hello@example.com"
-# Comma-separated allowed origins, or "*" for development only.
-ALLOWED_ORIGINS = "https://your-app.pages.dev,http://localhost:5173"
+# Comma-separated allowed browser origins. "*" is development only.
+ALLOWED_ORIGINS = "https://murtaza7863.github.io,http://localhost:5173,http://localhost:4173"
 
-# Set secrets via:
-#   wrangler secret put VAPID_PUBLIC_KEY
-#   wrangler secret put VAPID_PRIVATE_KEY
+# Set the private key as a secret, never in this file:
+#   npx wrangler secret put VAPID_PRIVATE_JWK
+#   npx wrangler secret put VAPID_PUBLIC_KEY

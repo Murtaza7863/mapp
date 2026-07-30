@@ -5,6 +5,7 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./src/test/setup.ts"],
     fileParallelism: false,
-    exclude: ["**/node_modules/**", "**/smoke.test.ts"],
+    // The push worker targets the Workers runtime and has its own suite.
+    exclude: ["**/node_modules/**", "**/smoke.test.ts", "worker/**"],
   },
 });
