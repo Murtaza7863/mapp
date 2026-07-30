@@ -13,9 +13,11 @@ Open `http://localhost:5173`. Install via **Add to Home Screen** (Safari on iOS,
 
 ## Live demo
 
-Temporary preview links from Cursor mobile are **not** a real deploy. They stop working when the session ends.
+**PWA:** https://murtaza7863.github.io/mapp/
 
-For a permanent URL, deploy `dist/` to Cloudflare Pages, Vercel, or Netlify (see Deploy below).
+Open that URL on your phone → Safari Share → **Add to Home Screen**. Launch from the home-screen icon for the full offline app.
+
+Temporary Cursor preview links are not a real deploy — they stop when the session ends.
 
 ## Capture
 
@@ -36,6 +38,7 @@ open calendar
 ```
 Travel: pack bags friday #personal
 ```
+
 ## Tech
 
 - React + Vite PWA
@@ -55,23 +58,23 @@ files into `public/fonts/`, and point `src/fonts.css` at the local paths.
 npm test           # unit tests
 npm run build      # production build → dist/
 npm run lint
-npm run preview    # preview production build
+npm run preview    # preview production build (LAN-reachable)
 ```
 
 ## Deploy
 
-**Cloudflare Pages** (or any static host):
+Pushes to `main` deploy automatically to **GitHub Pages**.
 
-| Setting | Value |
-|---------|-------|
-| Build command | `npm run build` |
-| Output directory | `dist` |
+| Host | Notes |
+|------|--------|
+| GitHub Pages | `BASE_PATH=/mapp/` via `.github/workflows/deploy-pages.yml` |
+| Cloudflare Pages / Netlify / Vercel | Build `npm run build`, output `dist`, leave `BASE_PATH` unset (root `/`) |
 
 Optional env vars for push: `VITE_PUSH_API_URL`, `VITE_VAPID_PUBLIC_KEY`
 
 ## Install on iPhone
 
-1. Open deployed URL in **Safari**
+1. Open https://murtaza7863.github.io/mapp/ in **Safari**
 2. Share → **Add to Home Screen**
 3. Launch from Home Screen (not Safari tabs)
 4. Enable notifications in Settings if push is configured

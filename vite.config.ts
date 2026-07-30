@@ -3,7 +3,11 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
 
+/** Set BASE_PATH=/mapp/ for GitHub Pages project sites. */
+const base = process.env.BASE_PATH || "/";
+
 export default defineConfig({
+  base,
   optimizeDeps: {
     exclude: ["@mlc-ai/web-llm"],
   },
@@ -36,9 +40,9 @@ export default defineConfig({
         background_color: "#F8F9FB",
         display: "standalone",
         orientation: "portrait",
-        start_url: "/",
-        scope: "/",
-        id: "/",
+        start_url: base,
+        scope: base,
+        id: base,
         icons: [
           {
             src: "pwa-192.png",
@@ -61,7 +65,7 @@ export default defineConfig({
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
         globIgnores: ["**/webllm*.js"],
-        navigateFallback: "/index.html",
+        navigateFallback: "index.html",
         importScripts: ["push-handler.js"],
       },
       devOptions: {

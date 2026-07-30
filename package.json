@@ -10,12 +10,12 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && cp dist/index.html dist/404.html",
     "test": "vitest run",
     "test:smoke": "vitest run src/test/smoke.test.ts",
     "test:watch": "vitest",
     "lint": "oxlint",
-    "preview": "vite preview",
+    "preview": "vite preview --host",
     "typecheck": "tsc -b --noEmit"
   },
   "dependencies": {

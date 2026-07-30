@@ -60,10 +60,15 @@ function AppRoutes() {
 }
 
 export default function App() {
+  const basename =
+    import.meta.env.BASE_URL === "/"
+      ? undefined
+      : import.meta.env.BASE_URL.replace(/\/$/, "");
+
   return (
     <ToastProvider>
       <UndoProvider>
-        <BrowserRouter>
+        <BrowserRouter basename={basename}>
           <AppRoutes />
         </BrowserRouter>
       </UndoProvider>
