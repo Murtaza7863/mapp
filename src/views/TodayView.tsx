@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 import type { ParseDumpResult } from "../lib/brain-dump/types";
 import type { FeedEntry, FeedFocus } from "../lib/feed";
@@ -49,16 +49,24 @@ export function TodayView() {
     updateItem,
     updateItems,
     deleteItem,
+    deleteItemCascade,
     restoreItem,
     markDone,
     snooze,
     unsnooze,
+    reopen,
   } = useItems();
   const { completions } = useCompletions();
-  const { categories, getCategory, addCategory, updateCategory } =
-    useCategories();
+  const {
+    categories,
+    getCategory,
+    addCategory,
+    updateCategory,
+    deleteCategory,
+  } = useCategories();
   const { deleteWithUndo } = useUndo();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [editItem, setEditItem] = useState<Item | null>(null);
   const [snoozeItem, setSnoozeItem] = useState<Item | null>(null);
@@ -138,17 +146,24 @@ export function TodayView() {
 
   const deepLinkId = searchParams.get("item");
   const focusParam = searchParams.get("focus");
+  const areaParam = searchParams.get("area");
 
   useEffect(() => {
     if (
       focusParam === "chase" ||
       focusParam === "prep" ||
-      focusParam === "overdue"
+      focusParam === "overdue" ||
+      focusParam === "priority" ||
+      focusParam === "today" ||
+      focusParam === "routine" ||
+      focusParam === "snoozed" ||
+      focusParam === "follow-up"
     ) {
       setFeedFocus(focusParam);
     }
+    if (areaParam) setAreaFilter(areaParam);
     if (searchParams.get("wrapup") === "1") setWrapUpOpen(true);
-  }, [focusParam, searchParams]);
+  }, [focusParam, areaParam, searchParams]);
 
   useEffect(() => {
     if (!deepLinkId) return;
@@ -177,11 +192,79 @@ export function TodayView() {
           addItem,
           addCategory,
           updateCategory,
+          deleteCategory,
+          markDone,
+          snooze,
+          unsnooze,
+          deleteItem,
+          deleteItemCascade,
+          updateItem,
+          updateItems,
+          reopen,
+          completions,
+          navigate: (to) => {
+            navigate(to);
+          },
+          openSheet: (sheet) => {
+            if (sheet === "wrapup") setWrapUpOpen(true);
+            if (sheet === "triage") openTriage();
+          },
+          updateSettings: async (partial) => {
+            const { updateSettings } = await import("../db");
+            await updateSettings(partial);
+          },
+          exportData: async (categoryId) => {
+            const { exportData, exportDataForCategory, downloadJson } =
+              await import("../lib/export");
+            const { updateSettings } = await import("../db");
+            const data = categoryId
+              ? await exportDataForCategory(categoryId)
+              : await exportData();
+            const slug = categoryId
+              ? (categories.find((c) => c.id === categoryId)?.name ?? "area")
+                  .toLowerCase()
+                  .replace(/\s+/g, "-")
+              : "backup";
+            await downloadJson(
+              data,
+              `plotline-${slug}-${new Date().toISOString().slice(0, 10)}.json`,
+            );
+            if (!categoryId) {
+              await updateSettings({
+                lastManualBackupAt: new Date().toISOString(),
+              });
+            }
+          },
+          restoreBackup: async () => {
+            const { restoreFromAutoBackup } =
+              await import("../lib/persistence");
+            await restoreFromAutoBackup();
+          },
+          syncSchedule: async () => {
+            const { syncNotificationSchedule } =
+              await import("../lib/notifications");
+            await syncNotificationSchedule();
+          },
         },
         { actions: result.actions },
       );
       const total =
-        applied.items.length + applied.foldersCreated + applied.areasCreated;
+        applied.items.length +
+        applied.foldersCreated +
+        applied.areasCreated +
+        applied.completed +
+        applied.snoozed +
+        applied.unsnoozed +
+        applied.deleted +
+        applied.updated +
+        applied.navigated +
+        applied.reopened +
+        applied.parked +
+        applied.settingsUpdated +
+        applied.exported +
+        applied.bumped +
+        applied.duplicated +
+        applied.restored;
       if (total === 0) return;
       if (applied.items[0]?.categoryId) {
         setLastCategoryId(applied.items[0].categoryId);
@@ -202,9 +285,48 @@ export function TodayView() {
           `${applied.items.length} item${applied.items.length === 1 ? "" : "s"}`,
         );
       }
-      toast(`Plotted ${parts.join(" + ")}`, { kind: "success" });
+      if (applied.completed > 0) {
+        parts.push(`${applied.completed} done`);
+      }
+      if (applied.reopened > 0) {
+        parts.push(`${applied.reopened} reopened`);
+      }
+      if (applied.snoozed > 0) {
+        parts.push(`${applied.snoozed} snoozed`);
+      }
+      if (applied.parked > 0) {
+        parts.push(`${applied.parked} parked`);
+      }
+      if (applied.bumped > 0) {
+        parts.push(`${applied.bumped} bumped`);
+      }
+      if (applied.duplicated > 0) {
+        parts.push(`${applied.duplicated} copied`);
+      }
+      if (applied.restored > 0) {
+        parts.push("restored");
+      }
+      if (applied.unsnoozed > 0) {
+        parts.push(`${applied.unsnoozed} woken`);
+      }
+      if (applied.deleted > 0) {
+        parts.push(`${applied.deleted} deleted`);
+      }
+      if (applied.updated > 0) {
+        parts.push(`${applied.updated} updated`);
+      }
+      if (applied.settingsUpdated > 0) {
+        parts.push("settings");
+      }
+      if (applied.exported > 0) {
+        parts.push("exported");
+      }
+      if (applied.navigated > 0) {
+        parts.push("opened");
+      }
+      toast(`Plotted ${parts.join(" · ")}`, { kind: "success" });
     } catch (err) {
-      toast(err instanceof Error ? err.message : "Could not save items", {
+      toast(err instanceof Error ? err.message : "Could not apply Plot", {
         kind: "error",
       });
       throw err;
@@ -275,7 +397,7 @@ export function TodayView() {
         showWrapUp={isWrapUpTime()}
       />
 
-      <PlotBar categories={categories} onParsed={handlePlot} />
+      <PlotBar categories={categories} items={items} onParsed={handlePlot} />
 
       <StatusLine
         summary={summary}
@@ -360,7 +482,7 @@ export function TodayView() {
       {fullFeed.length === 0 && eventDeadlineCount === 0 ? (
         <EmptyState
           title="Nothing scheduled"
-          description="Anything you add lands here, sorted by when it matters"
+          description="Use Plot above — add tasks, or try done:, snooze, open calendar…"
         />
       ) : feed.length === 0 ? (
         <EmptyState

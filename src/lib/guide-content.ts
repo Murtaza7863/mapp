@@ -5,90 +5,137 @@ export interface GuideSection {
 }
 
 export const GUIDE_INTRO =
-  "Plotline works best when you know what to expect. These tips save the most frustration.";
+  "Plot is the bar on Home. Type what you want — new tasks or commands that change what’s already there — then confirm before anything saves.";
 
 export const GUIDE_SECTIONS: GuideSection[] = [
   {
-    title: "Always check before adding",
+    title: "Add tasks in plain English",
     body: [
-      "The confirm sheet is not optional polish. It is your safety net.",
-      "If the title still has a date in it, or the day looks wrong, fix it there before you tap Add. That is faster than retyping.",
-    ],
-  },
-  {
-    title: "Include a day or time when it matters",
-    body: [
-      "Plain tasks without a date are fine. When you care about when something happens, say it in the same line.",
+      "Say the task the way you’d say it out loud. Add a day when timing matters, #area for Work or Personal, and ! for priority.",
     ],
     examples: [
       "email prof tomorrow #work",
-      "meeting with shopee next tues 4pm",
+      "dentist tuesday #personal",
       "pay rent friday !",
+      "gym mon wed fri",
     ],
   },
   {
-    title: "Ways to write a date",
+    title: "Control what’s already there",
     body: [
-      "Weekdays, calendar dates, and rough timing all work. A date in the past rolls forward to the next one.",
-      "Times of day count too: noon, midnight, and morning or evening once a day is set.",
+      "Name the existing task in the same line. Plot matches it, shows a preview, and waits for you to apply.",
+      "If two titles look alike, pick the right one in the confirm sheet.",
     ],
     examples: [
-      "essay due dec 15        submit taxes 5 apr",
-      "call mom this weekend   gym next month",
-      "lunch at noon           renew pass end of week",
-      "reply in 2 hours        dentist in 3 days",
+      "done: pay rent",
+      "mark gym done",
+      "snooze call mom until friday",
+      "delete dentist",
+      "reopen essay",
+      "star gym",
+      "reschedule rent to monday",
+      "move essay to #personal",
+      "file visa in Travel folder",
+      "rename essay to final draft",
     ],
   },
   {
-    title: "Short weekday names",
-    body: [
-      "Most abbreviations are understood on their own: mon, tues, weds, thurs, fri.",
-      'Because "sat" and "sun" are ordinary words, they only count as days after a cue. That keeps "study sat exam" and "buy sun hat" intact.',
+    title: "Jump around the app",
+    body: ["Open screens, search, or filter an area without leaving Plot."],
+    examples: [
+      "open calendar",
+      "show nudges",
+      "find rent",
+      "open folder Travel",
+      "show area Work",
+      "wrap up",
     ],
-    examples: ["standup weds 9am", "laundry on sat", "brunch next sun"],
   },
   {
-    title: "Areas and priority",
+    title: "Day cleanup & settings",
     body: [
-      "Tag an area with # and the first letters of its name. Add ! for priority.",
+      "Batch actions and settings work the same way — preview, then apply.",
     ],
-    examples: ["submit essay #work", "dentist tuesday #personal"],
+    examples: [
+      "park open tasks",
+      "bump all nudges",
+      "complete all overdue",
+      "turn on digest",
+      "export backup",
+      "create folder for Travel",
+    ],
   },
   {
-    title: "Several tasks at once",
+    title: "Always check the sheet",
     body: [
-      "Separate items with commas. Each chunk can have its own date and area.",
+      "The confirm sheet is the safety net. Fix titles, dates, or which tasks are selected before you tap Add or Apply.",
+    ],
+  },
+  {
+    title: "Dates that work",
+    body: [
+      "Weekdays, calendar dates, relative timing, and times of day all parse. A weekday in the past rolls to the next one.",
+      'Short names like mon–fri work on their own. "sat" and "sun" need a cue (on sat, next sun) so titles like "buy sun hat" stay intact.',
+    ],
+    examples: [
+      "essay due dec 15",
+      "call mom this weekend",
+      "reply in 2 hours",
+      "standup weds 9am",
+      "laundry on sat",
+    ],
+  },
+  {
+    title: "Several things at once",
+    body: [
+      "Separate with commas or new lines. Each chunk can have its own date and area.",
     ],
     examples: ["email prof tomorrow #work, gym friday #personal, pay rent !"],
   },
   {
-    title: "Follow-ups are optional",
+    title: "Folders (optional)",
     body: [
-      "A follow-up is for someone you need to ping again — not a dated deadline. Most days you can ignore More → Follow-ups entirely.",
-      'Dated lines like "call mom sunday" stay normal tasks. Undated "email jake" or explicit "follow up with…" may land as a follow-up. Change the type in the confirm sheet if that is wrong.',
+      "Folders group related tasks inside an area. Create them from an area page, or ask Plot.",
+      "To nest an existing task: file it under a folder. Phrases like put X in Y folder still create a new task inside that folder.",
+    ],
+    examples: [
+      "create folder for Travel",
+      "file passport in Travel folder",
+      "open folder Travel",
+    ],
+  },
+  {
+    title: "Follow-ups (optional)",
+    body: [
+      "Use a follow-up when you’re waiting on someone — not for every dated task.",
+      "Undated “email jordan” may land as a follow-up. Change the type in the confirm sheet if that’s wrong.",
+      "Stages like waiting / your turn are for those threads. Bare “bump jordan” still creates a new follow-up; say mark jordan waiting to update an existing one.",
+    ],
+    examples: [
+      "follow up with jordan by friday",
+      "mark jordan waiting",
+      "your turn on jordan",
     ],
   },
   {
     title: "On-device parsing",
     body: [
-      "Clear phrasing is handled instantly. Messier dumps may refine on-device if your phone supports it.",
-      "The first model load can take a minute on WiFi. After that, parsing is much quicker.",
-      "No model or slow device? Rules still handle dates, areas, and comma lists. You are not blocked.",
+      "Clear lines parse instantly with rules. Messier dumps may refine on-device if your phone supports it.",
+      "The first model load can take a minute on Wi‑Fi; after that it’s quicker. No model? Rules still handle dates, areas, lists, and most commands.",
     ],
   },
   {
     title: "When something looks wrong",
     body: [
-      "Edit the title and date in the confirm sheet. Use the date picker if the time is off.",
-      "Voice works best in a quiet spot. Mic input is a draft, not a final answer.",
-      'If you are stuck, add the task with a simple line like "call jake friday" and fix details after.',
+      "Edit in the confirm sheet, or use the date picker. Voice is a draft — quiet rooms work best.",
+      "Stuck? Use a short line like “call jordan friday” and fix details after.",
     ],
   },
   {
     title: "Your data stays here",
     body: [
-      "Everything is stored on this device. Export JSON in Settings before you switch phones.",
-      "Install from Safari (Add to Home Screen) for the full app experience on iPhone.",
+      "Everything lives on this device. Export JSON from Settings before you switch phones.",
+      "On iPhone, install from Safari → Add to Home Screen for the full app experience.",
     ],
   },
 ];

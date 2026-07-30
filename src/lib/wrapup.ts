@@ -1,4 +1,11 @@
-import { isSameDay, parseISO } from "date-fns";
+import {
+  addDays,
+  isSameDay,
+  parseISO,
+  setHours,
+  setMinutes,
+  startOfDay,
+} from "date-fns";
 
 import type { CompletionLog, Item } from "../types";
 
@@ -13,6 +20,11 @@ export interface WrapUpSummary {
   needsNudge: number;
   parkable: Item[];
   headline: string;
+}
+
+export function tomorrowMorning(now = new Date()): Date {
+  const d = addDays(startOfDay(now), 1);
+  return setMinutes(setHours(d, 9), 0);
 }
 
 export function computeWrapUpSummary(

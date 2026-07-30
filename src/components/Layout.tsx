@@ -37,7 +37,7 @@ const mainLinks = [
 ];
 
 const moreLinks = [
-  { to: "/guide", label: "How it works", Icon: SparkIcon },
+  { to: "/guide", label: "How to use", Icon: SparkIcon },
   {
     to: "/follow-ups",
     label: "Follow-ups",

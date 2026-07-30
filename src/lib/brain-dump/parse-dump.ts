@@ -1,10 +1,11 @@
 import type { InitProgressCallback } from "@mlc-ai/web-llm";
 
-import type { Category } from "../../types";
+import type { Category, Item } from "../../types";
 
 import { generatePlotParse } from "./llm-engine";
 import { mergePlotProposals } from "./merge-proposals";
 import { refineProposals } from "./refine-proposals";
+import { resolveActionTargets } from "./resolve-target";
 import { parseDumpWithRules, splitDumpLines } from "./rules-parser";
 import type { ParseDumpResult } from "./types";
 import { parseModelResponse } from "./validate";
@@ -13,30 +14,48 @@ export interface ParseDumpOptions {
   categories: Category[];
   preferLlm?: boolean;
   onModelProgress?: InitProgressCallback;
+  /** Existing items — used to resolve complete/snooze/delete targets */
+  items?: Item[];
+}
+
+function attachTargets(
+  result: ParseDumpResult,
+  items: Item[] | undefined,
+): ParseDumpResult {
+  if (!items?.length || result.actions.length === 0) return result;
+  return {
+    ...result,
+    actions: resolveActionTargets(result.actions, items),
+  };
 }
 
 function refineRulesResult(
   text: string,
   categories: Category[],
+  items?: Item[],
 ): ParseDumpResult {
   const lines = splitDumpLines(text);
   const rulesResult = parseDumpWithRules(text, categories);
-  return {
-    ...rulesResult,
-    items: refineProposals(rulesResult.items, categories, lines),
-  };
+  return attachTargets(
+    {
+      ...rulesResult,
+      items: refineProposals(rulesResult.items, categories, lines),
+    },
+    items,
+  );
 }
 
 /** Fast rules-only parse — synchronous, for instant confirm preview. */
 export function parseRulesDump(
   text: string,
   categories: Category[],
+  items: Item[] = [],
 ): ParseDumpResult {
   const trimmed = text.trim();
   if (!trimmed) {
     return { items: [], actions: [], clarifications: [], source: "rules" };
   }
-  return refineRulesResult(trimmed, categories);
+  return refineRulesResult(trimmed, categories, items);
 }
 
 /** Skip the slow on-device model when quick parse already nailed it. */
@@ -86,6 +105,7 @@ export async function refineDumpWithLlm(
   categories: Category[],
   rulesResult: ParseDumpResult,
   onModelProgress?: InitProgressCallback,
+  pendingItems: Item[] = [],
 ): Promise<ParseDumpResult | null> {
   const trimmed = text.trim();
   if (
@@ -100,6 +120,7 @@ export async function refineDumpWithLlm(
     dump: trimmed,
     categories,
     rulesPreview: rulesResult.items,
+    pendingItems,
     onProgress: onModelProgress,
   });
 
@@ -109,7 +130,24 @@ export async function refineDumpWithLlm(
   );
   const refinedLlm = refineProposals(items, categories, lines);
   const mergedItems = mergePlotProposals(rulesResult.items, refinedLlm);
-  const mergedActions = actions.length > 0 ? actions : rulesResult.actions;
+  // Prefer LLM actions when present; otherwise keep rules. If both, union by kind+query.
+  const mergedActions = (() => {
+    if (actions.length === 0) return rulesResult.actions;
+    if (rulesResult.actions.length === 0) return actions;
+    const seen = new Set(
+      actions.map(
+        (a) =>
+          `${a.kind}|${(a.targetQuery ?? a.title).toLowerCase()}|${a.navigateTo ?? ""}`,
+      ),
+    );
+    const extras = rulesResult.actions.filter(
+      (a) =>
+        !seen.has(
+          `${a.kind}|${(a.targetQuery ?? a.title).toLowerCase()}|${a.navigateTo ?? ""}`,
+        ),
+    );
+    return [...actions, ...extras];
+  })();
 
   if (mergedItems.length === 0 && mergedActions.length === 0) return null;
 
@@ -131,12 +169,15 @@ export async function refineDumpWithLlm(
     return null;
   }
 
-  return {
-    items: mergedItems,
-    actions: mergedActions,
-    clarifications: [...rulesResult.clarifications, ...clarifications],
-    source: "llm",
-  };
+  return attachTargets(
+    {
+      items: mergedItems,
+      actions: mergedActions,
+      clarifications: [...rulesResult.clarifications, ...clarifications],
+      source: "llm",
+    },
+    pendingItems,
+  );
 }
 
 export async function parseBrainDump(
@@ -148,7 +189,11 @@ export async function parseBrainDump(
     return { items: [], actions: [], clarifications: [], source: "rules" };
   }
 
-  const refinedRules = refineRulesResult(trimmed, options.categories);
+  const refinedRules = refineRulesResult(
+    trimmed,
+    options.categories,
+    options.items,
+  );
 
   const tryLlm =
     options.preferLlm !== false &&
@@ -168,6 +213,7 @@ export async function parseBrainDump(
       options.categories,
       refinedRules,
       options.onModelProgress,
+      options.items ?? [],
     );
     return llmResult ?? refinedRules;
   } catch {

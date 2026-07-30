@@ -381,6 +381,7 @@ export function parseDumpWithRules(
       const feature = matchFeatureIntent(
         `create folder for ${compoundFolder.folderName}`,
         categories,
+        now,
       );
       if (feature) {
         const action = featureIntentToProposal(feature, categories);
@@ -412,7 +413,7 @@ export function parseDumpWithRules(
 
     const segments = expandLineSegments(normalizedLine, categories);
     for (const segment of segments) {
-      const feature = matchFeatureIntent(segment, categories);
+      const feature = matchFeatureIntent(segment, categories, now);
       if (feature) {
         const action = featureIntentToProposal(feature, categories);
         const key = `${action.kind}|${action.title.toLowerCase()}|${action.categoryHint ?? ""}`;

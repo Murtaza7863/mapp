@@ -118,9 +118,32 @@ export function payloadToProposals(
     .filter((item): item is ProposedItem => item !== null);
 }
 
+function actionSummary(
+  kind: import("./types").AppFeatureId,
+  title: string,
+  categoryHint?: string,
+  dueAt?: string | null,
+): string {
+  if (kind === "create_folder") {
+    return categoryHint
+      ? `New folder “${title}” in ${categoryHint}`
+      : `New folder “${title}”`;
+  }
+  if (kind === "create_area") return `New area “${title}”`;
+  if (kind === "navigate") return `Go to ${title}`;
+  if (kind === "snooze_item" && dueAt) return `Snooze “${title}” until then`;
+  if (kind === "complete_item") return `Complete “${title}”`;
+  if (kind === "delete_item") return `Delete “${title}”`;
+  if (kind === "unsnooze_item") return `Wake “${title}”`;
+  if (kind === "set_pipeline") return `Update stage — “${title}”`;
+  if (kind === "update_item") return `Update “${title}”`;
+  return `${featureLabel(kind)} “${title}”`;
+}
+
 export function payloadToActions(
   payload: ModelParsePayload,
   categories: Category[],
+  now: Date = new Date(),
 ): ProposedFeatureAction[] {
   const rawActions = Array.isArray(payload.actions) ? payload.actions : [];
   const actions: ProposedFeatureAction[] = [];
@@ -133,23 +156,49 @@ export function payloadToActions(
 
     const categoryHint = raw.categoryHint?.trim() || undefined;
     const prettyTitle = title.charAt(0).toUpperCase() + title.slice(1);
+    const targetQuery =
+      raw.targetQuery?.trim() ||
+      (kind !== "create_folder" && kind !== "create_area" && kind !== "navigate"
+        ? title
+        : undefined);
+    const dueAt = raw.dueAt ?? undefined;
+    const navigateTo = raw.navigateTo?.trim() || undefined;
+    const pipelineStage = normalizePipelineStage(raw.pipelineStage);
+    const patch =
+      kind === "update_item"
+        ? {
+            ...(raw.priority != null
+              ? { priority: Boolean(raw.priority) }
+              : {}),
+            ...(categoryHint
+              ? {
+                  categoryHint,
+                  categoryId: resolveCategoryId(categoryHint, categories),
+                }
+              : {}),
+            ...(dueAt !== undefined ? { dueAt: dueAt ?? null } : {}),
+            ...(pipelineStage ? { pipelineStage } : {}),
+          }
+        : undefined;
+
     const action: ProposedFeatureAction = {
       id: uuidv4(),
       kind,
       title: prettyTitle,
       categoryId:
-        resolveCategoryId(categoryHint, categories) ?? categories[0]?.id,
+        resolveCategoryId(categoryHint, categories) ??
+        (kind === "create_folder" ? categories[0]?.id : undefined),
       categoryHint,
-      summary:
-        kind === "create_folder"
-          ? `${featureLabel(kind)} “${prettyTitle}”${
-              categoryHint ? ` in ${categoryHint}` : ""
-            }`
-          : `${featureLabel(kind)} “${prettyTitle}”`,
+      summary: actionSummary(kind, prettyTitle, categoryHint, dueAt),
       selected: true,
+      targetQuery,
+      dueAt: dueAt ?? undefined,
+      navigateTo,
+      pipelineStage,
+      patch,
     };
 
-    const key = `${action.kind}|${action.title.toLowerCase()}|${action.categoryHint ?? ""}`;
+    const key = `${action.kind}|${action.title.toLowerCase()}|${action.targetQuery ?? ""}|${action.categoryHint ?? ""}|${action.navigateTo ?? ""}`;
     if (seen.has(key)) continue;
     seen.add(key);
     actions.push(action);
@@ -159,10 +208,10 @@ export function payloadToActions(
   for (const raw of Array.isArray(payload.items) ? payload.items : []) {
     const rawTitle = raw.title?.trim();
     if (!rawTitle) continue;
-    const matched = matchFeatureIntent(rawTitle, categories);
+    const matched = matchFeatureIntent(rawTitle, categories, now);
     if (!matched) continue;
     const action = featureIntentToProposal(matched, categories);
-    const key = `${action.kind}|${action.title.toLowerCase()}|${action.categoryHint ?? ""}`;
+    const key = `${action.kind}|${action.title.toLowerCase()}|${action.targetQuery ?? ""}|${action.categoryHint ?? ""}|${action.navigateTo ?? ""}`;
     if (seen.has(key)) continue;
     seen.add(key);
     actions.push(action);
@@ -174,6 +223,7 @@ export function payloadToActions(
 export function parseModelResponse(
   text: string,
   categories: Category[],
+  now: Date = new Date(),
 ): {
   items: ProposedItem[];
   actions: ProposedFeatureAction[];
@@ -181,7 +231,7 @@ export function parseModelResponse(
 } {
   const parsed = extractJsonObject(text) as ModelParsePayload;
   const items = payloadToProposals(parsed, categories);
-  const actions = payloadToActions(parsed, categories);
+  const actions = payloadToActions(parsed, categories, now);
   const clarifications = Array.isArray(parsed.clarifications)
     ? parsed.clarifications.filter(
         (c): c is string => typeof c === "string" && c.trim().length > 0,

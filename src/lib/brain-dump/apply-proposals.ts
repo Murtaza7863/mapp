@@ -1,5 +1,9 @@
-import type { Category, Item, ItemInput } from "../../types";
+import type { AppSettings, Category, Item, ItemInput } from "../../types";
+import { applyThreadActionToItems } from "../batch-threads";
+import { isOverdue } from "../dates";
 import { nextChildSortOrder } from "../projects";
+import { applyThreadStage, findQuickAction } from "../thread-actions";
+import { computeWrapUpSummary, tomorrowMorning } from "../wrapup";
 
 import type { PlotStructure } from "./structure-parser";
 import type { ProposedFeatureAction, ProposedItem } from "./types";
@@ -18,12 +22,47 @@ type UpdateCategoryFn = (
   changes: Partial<Category>,
 ) => Promise<void>;
 
+type MarkDoneFn = (item: Item) => Promise<unknown>;
+type SnoozeFn = (item: Item, until: Date) => Promise<unknown>;
+type UnsnoozeFn = (item: Item) => Promise<unknown>;
+type DeleteItemFn = (id: string) => Promise<unknown>;
+type DeleteItemCascadeFn = (id: string) => Promise<unknown>;
+type UpdateItemFn = (id: string, changes: Partial<Item>) => Promise<unknown>;
+type UpdateItemsFn = (
+  updates: Array<{ id: string; changes: Partial<Item> }>,
+) => Promise<unknown>;
+type ReopenFn = (item: Item) => Promise<unknown>;
+type NavigateFn = (to: string) => void;
+type DeleteCategoryFn = (id: string) => Promise<unknown>;
+type UpdateSettingsFn = (
+  partial: Partial<Omit<AppSettings, "id">>,
+) => Promise<unknown>;
+type ExportDataFn = (categoryId?: string) => Promise<unknown>;
+type RestoreBackupFn = () => Promise<unknown>;
+type SyncScheduleFn = () => Promise<unknown>;
+
 export interface PlotApplyContext {
   categories: Category[];
   items: Item[];
   addItem: AddItemFn;
   addCategory: AddCategoryFn;
   updateCategory: UpdateCategoryFn;
+  deleteCategory?: DeleteCategoryFn;
+  markDone?: MarkDoneFn;
+  snooze?: SnoozeFn;
+  unsnooze?: UnsnoozeFn;
+  deleteItem?: DeleteItemFn;
+  deleteItemCascade?: DeleteItemCascadeFn;
+  updateItem?: UpdateItemFn;
+  updateItems?: UpdateItemsFn;
+  reopen?: ReopenFn;
+  navigate?: NavigateFn;
+  openSheet?: (sheet: "wrapup" | "triage") => void;
+  updateSettings?: UpdateSettingsFn;
+  exportData?: ExportDataFn;
+  restoreBackup?: RestoreBackupFn;
+  syncSchedule?: SyncScheduleFn;
+  completions?: { completedAt: string }[];
 }
 
 export interface ApplyProposalsOptions {
@@ -34,6 +73,19 @@ export interface ApplyProposalsResult {
   items: Item[];
   foldersCreated: number;
   areasCreated: number;
+  completed: number;
+  snoozed: number;
+  unsnoozed: number;
+  deleted: number;
+  updated: number;
+  navigated: number;
+  reopened: number;
+  parked: number;
+  settingsUpdated: number;
+  exported: number;
+  bumped: number;
+  duplicated: number;
+  restored: number;
 }
 
 const DEFAULT_COLORS = [
@@ -136,17 +188,57 @@ async function ensureFolder(
   return folder;
 }
 
+function findTarget(
+  ctx: PlotApplyContext,
+  action: ProposedFeatureAction,
+): Item | undefined {
+  if (action.resolvedItemId) {
+    return ctx.items.find((i) => i.id === action.resolvedItemId);
+  }
+  return undefined;
+}
+
 async function applyFeatureActions(
   actions: ProposedFeatureAction[],
   ctx: PlotApplyContext,
-): Promise<{ foldersCreated: number; areasCreated: number }> {
+): Promise<{
+  foldersCreated: number;
+  areasCreated: number;
+  completed: number;
+  snoozed: number;
+  unsnoozed: number;
+  deleted: number;
+  updated: number;
+  navigated: number;
+  reopened: number;
+  parked: number;
+  settingsUpdated: number;
+  exported: number;
+  bumped: number;
+  duplicated: number;
+  restored: number;
+}> {
   let foldersCreated = 0;
   let areasCreated = 0;
+  let completed = 0;
+  let snoozed = 0;
+  let unsnoozed = 0;
+  let deleted = 0;
+  let updated = 0;
+  let navigated = 0;
+  let reopened = 0;
+  let parked = 0;
+  let settingsUpdated = 0;
+  let exported = 0;
+  let bumped = 0;
+  let duplicated = 0;
+  let restored = 0;
 
   for (const action of actions) {
-    if (!action.selected || !action.title.trim()) continue;
+    if (!action.selected) continue;
 
     if (action.kind === "create_folder") {
+      if (!action.title.trim()) continue;
       const categoryId =
         action.categoryId ??
         ctx.categories.find(
@@ -164,6 +256,7 @@ async function applyFeatureActions(
     }
 
     if (action.kind === "create_area") {
+      if (!action.title.trim()) continue;
       const existing = ctx.categories.find(
         (c) => c.name.toLowerCase() === action.title.trim().toLowerCase(),
       );
@@ -176,10 +269,385 @@ async function applyFeatureActions(
         action.categoryHint,
       );
       if (ctx.categories.length > before) areasCreated += 1;
+      continue;
+    }
+
+    if (action.kind === "navigate") {
+      if (action.categoryHint && ctx.navigate && !action.targetQuery) {
+        const id = resolveCategoryId(action.categoryHint, ctx.categories);
+        if (id) {
+          ctx.navigate(`/?area=${id}`);
+          navigated += 1;
+          continue;
+        }
+      }
+      if (action.openSheet && ctx.openSheet) ctx.openSheet(action.openSheet);
+      if (action.navigateTo && ctx.navigate) {
+        ctx.navigate(action.navigateTo);
+        navigated += 1;
+      }
+      continue;
+    }
+
+    if (action.kind === "park_open") {
+      if (!ctx.snooze) continue;
+      const until = action.dueAt ? new Date(action.dueAt) : tomorrowMorning();
+      const parkable = computeWrapUpSummary(
+        ctx.items,
+        (ctx.completions as never) ?? [],
+      ).parkable;
+      for (const item of parkable) {
+        await ctx.snooze(item, until);
+        parked += 1;
+      }
+      continue;
+    }
+
+    if (action.kind === "bump_nudges") {
+      const actionDef = findQuickAction("Bump sent");
+      if (!actionDef || !ctx.updateItems) continue;
+      const chase = ctx.items.filter(
+        (i) => i.type === "follow-up" && i.status === "pending",
+      );
+      const updates = applyThreadActionToItems(chase, actionDef);
+      if (updates.length === 0) continue;
+      await ctx.updateItems(updates);
+      bumped += updates.length;
+      continue;
+    }
+
+    if (action.kind === "complete_overdue") {
+      if (!ctx.markDone) continue;
+      const overdue = ctx.items.filter(
+        (i) =>
+          i.status === "pending" &&
+          i.type !== "routine" &&
+          i.type !== "follow-up" &&
+          isOverdue(i),
+      );
+      for (const item of overdue) {
+        await ctx.markDone(item);
+        completed += 1;
+      }
+      continue;
+    }
+
+    if (action.kind === "export_data") {
+      if (!ctx.exportData) continue;
+      const catId =
+        action.categoryId ??
+        resolveCategoryId(action.categoryHint, ctx.categories);
+      await ctx.exportData(catId);
+      exported += 1;
+      continue;
+    }
+
+    if (action.kind === "restore_backup") {
+      if (!ctx.restoreBackup) continue;
+      await ctx.restoreBackup();
+      restored += 1;
+      continue;
+    }
+
+    if (action.kind === "update_settings") {
+      if (action.summary === "Sync notification schedule" && ctx.syncSchedule) {
+        await ctx.syncSchedule();
+        settingsUpdated += 1;
+        continue;
+      }
+      if (!ctx.updateSettings || !action.settingsPatch) continue;
+      const patch = { ...action.settingsPatch };
+      if (!patch.defaultCategoryId && patch.defaultCategoryHint) {
+        patch.defaultCategoryId = resolveCategoryId(
+          patch.defaultCategoryHint,
+          ctx.categories,
+        );
+      }
+      const { defaultCategoryHint: _hint, ...rest } = patch;
+      await ctx.updateSettings(rest);
+      if (ctx.syncSchedule && rest.digestEnabled !== undefined) {
+        await ctx.syncSchedule();
+      }
+      settingsUpdated += 1;
+      continue;
+    }
+
+    if (action.kind === "update_area") {
+      if (!action.areaPatch) continue;
+      const catId =
+        action.categoryId ??
+        resolveCategoryId(action.categoryHint ?? action.title, ctx.categories);
+      if (!catId) continue;
+      await ctx.updateCategory(catId, action.areaPatch);
+      const idx = ctx.categories.findIndex((c) => c.id === catId);
+      if (idx >= 0) {
+        ctx.categories[idx] = { ...ctx.categories[idx], ...action.areaPatch };
+      }
+      updated += 1;
+      continue;
+    }
+
+    if (action.kind === "rename_area") {
+      const fromHint = action.categoryHint ?? action.title;
+      const catId = resolveCategoryId(fromHint, ctx.categories);
+      if (!catId || !action.title.trim()) continue;
+      await ctx.updateCategory(catId, { name: action.title.trim() });
+      const idx = ctx.categories.findIndex((c) => c.id === catId);
+      if (idx >= 0) {
+        ctx.categories[idx] = {
+          ...ctx.categories[idx],
+          name: action.title.trim(),
+        };
+      }
+      updated += 1;
+      continue;
+    }
+
+    if (action.kind === "delete_area") {
+      if (!ctx.deleteCategory) continue;
+      const catId =
+        action.categoryId ??
+        resolveCategoryId(action.categoryHint ?? action.title, ctx.categories);
+      if (!catId) continue;
+      await ctx.deleteCategory(catId);
+      ctx.categories = ctx.categories.filter((c) => c.id !== catId);
+      deleted += 1;
+      continue;
+    }
+
+    if (action.kind === "delete_folder") {
+      const folder =
+        findTarget(ctx, action) ??
+        ctx.items.find(
+          (i) =>
+            i.type === "project" &&
+            !i.parentId &&
+            i.title.toLowerCase() === action.title.trim().toLowerCase(),
+        );
+      if (!folder) continue;
+      if (ctx.deleteItemCascade) await ctx.deleteItemCascade(folder.id);
+      else if (ctx.deleteItem) await ctx.deleteItem(folder.id);
+      else continue;
+      deleted += 1;
+      continue;
+    }
+
+    if (action.kind === "rename_folder") {
+      if (!ctx.updateItem) continue;
+      const folder = findTarget(ctx, action);
+      if (!folder || !action.patch?.title) continue;
+      await ctx.updateItem(folder.id, { title: action.patch.title });
+      updated += 1;
+      continue;
+    }
+
+    if (action.kind === "move_folder") {
+      if (!ctx.updateItem) continue;
+      const folder = findTarget(ctx, action);
+      const catId =
+        action.patch?.categoryId ??
+        action.categoryId ??
+        resolveCategoryId(
+          action.patch?.categoryHint ?? action.categoryHint,
+          ctx.categories,
+        );
+      if (!folder || !catId) continue;
+      await ctx.updateItem(folder.id, { categoryId: catId });
+      const children = ctx.items.filter((i) => i.parentId === folder.id);
+      for (const child of children) {
+        await ctx.updateItem(child.id, { categoryId: catId });
+      }
+      updated += 1;
+      continue;
+    }
+
+    const target = findTarget(ctx, action);
+    if (!target) continue;
+
+    if (action.kind === "duplicate_item") {
+      const copy = await ctx.addItem({
+        title: `${target.title} (copy)`,
+        type: target.type,
+        categoryId: target.categoryId,
+        parentId: target.parentId,
+        childGroup: target.childGroup,
+        dueAt: target.dueAt,
+        priority: target.priority,
+        notes: target.notes,
+        contactName: target.contactName,
+        pipelineStage: target.pipelineStage,
+        recurrence: target.recurrence,
+        reminderOffsetMinutes: target.reminderOffsetMinutes,
+        notificationsMuted: target.notificationsMuted,
+        goalCount: target.goalCount,
+        sortOrder: target.parentId
+          ? nextChildSortOrder(ctx.items, target.parentId)
+          : undefined,
+      });
+      ctx.items.push(copy);
+      duplicated += 1;
+      continue;
+    }
+
+    if (action.kind === "complete_item") {
+      if (!ctx.markDone) continue;
+      await ctx.markDone(target);
+      completed += 1;
+      continue;
+    }
+
+    if (action.kind === "reopen_item") {
+      if (!ctx.reopen) continue;
+      await ctx.reopen(target);
+      reopened += 1;
+      continue;
+    }
+
+    if (action.kind === "snooze_item") {
+      if (!ctx.snooze || !action.dueAt) continue;
+      await ctx.snooze(target, new Date(action.dueAt));
+      snoozed += 1;
+      continue;
+    }
+
+    if (action.kind === "unsnooze_item") {
+      if (!ctx.unsnooze) continue;
+      await ctx.unsnooze(target);
+      unsnoozed += 1;
+      continue;
+    }
+
+    if (action.kind === "delete_item") {
+      if (!ctx.deleteItem) continue;
+      await ctx.deleteItem(target.id);
+      deleted += 1;
+      continue;
+    }
+
+    if (action.kind === "update_item") {
+      if (!ctx.updateItem) continue;
+      const changes: Partial<Item> = {};
+      if (action.patch?.title) changes.title = action.patch.title;
+      if (action.patch?.priority !== undefined) {
+        changes.priority = action.patch.priority;
+      }
+      if (action.patch?.categoryId)
+        changes.categoryId = action.patch.categoryId;
+      else if (action.patch?.categoryHint) {
+        const id = resolveCategoryId(action.patch.categoryHint, ctx.categories);
+        if (id) changes.categoryId = id;
+      }
+      if (action.patch?.type) {
+        changes.type = action.patch.type;
+        if (action.patch.type === "follow-up" && !target.pipelineStage) {
+          changes.pipelineStage = "outreach";
+          changes.lastContactAt = new Date().toISOString();
+        }
+      }
+      if (action.patch?.recurrence !== undefined) {
+        changes.recurrence = action.patch.recurrence ?? undefined;
+        if (action.patch.recurrence && !changes.type) {
+          changes.type = "routine";
+        }
+      }
+      if (action.patch?.notes !== undefined) {
+        changes.notes = action.patch.notes || undefined;
+      }
+      if (action.patch?.contactName !== undefined) {
+        changes.contactName = action.patch.contactName || undefined;
+      }
+      if (action.patch?.nextAction !== undefined) {
+        changes.nextAction = action.patch.nextAction || undefined;
+      }
+      if (action.patch?.checkBackAt !== undefined) {
+        changes.checkBackAt = action.patch.checkBackAt ?? undefined;
+      }
+      if (action.patch?.linkedEventAt !== undefined) {
+        changes.linkedEventAt = action.patch.linkedEventAt ?? undefined;
+      }
+      if (action.patch?.notificationsMuted !== undefined) {
+        changes.notificationsMuted = action.patch.notificationsMuted;
+      }
+      if (action.patch?.reminderOffsetMinutes !== undefined) {
+        changes.reminderOffsetMinutes =
+          action.patch.reminderOffsetMinutes ?? undefined;
+      }
+      if (action.patch?.childGroup !== undefined) {
+        changes.childGroup = action.patch.childGroup ?? undefined;
+      }
+      if (action.patch?.lastContactAt !== undefined) {
+        changes.lastContactAt = action.patch.lastContactAt ?? undefined;
+      }
+      if (action.patch?.goalCount !== undefined) {
+        changes.goalCount = action.patch.goalCount ?? undefined;
+      }
+      if (action.patch?.parentFolderName !== undefined) {
+        if (action.patch.parentFolderName === null) {
+          changes.parentId = undefined;
+        } else {
+          const folderName = action.patch.parentFolderName.trim();
+          const folder =
+            ctx.items.find(
+              (i) =>
+                i.type === "project" &&
+                !i.parentId &&
+                i.title.toLowerCase() === folderName.toLowerCase(),
+            ) ?? (await ensureFolder(ctx, target.categoryId, folderName));
+          changes.parentId = folder.id;
+          if (!changes.categoryId) changes.categoryId = folder.categoryId;
+        }
+      }
+      if (action.patch?.dueAt !== undefined) {
+        changes.dueAt = action.patch.dueAt ?? undefined;
+      } else if (action.dueAt) {
+        changes.dueAt = action.dueAt;
+      }
+      if (Object.keys(changes).length === 0) continue;
+      await ctx.updateItem(target.id, changes);
+      updated += 1;
+      continue;
+    }
+
+    if (action.kind === "set_pipeline") {
+      if (!ctx.updateItem || !action.pipelineStage) continue;
+      const quick =
+        action.pipelineStage === "waiting"
+          ? findQuickAction("Bump sent")
+          : action.pipelineStage === "scheduling"
+            ? findQuickAction("They replied")
+            : action.pipelineStage === "my_turn"
+              ? findQuickAction("Your turn")
+              : action.pipelineStage === "deferred"
+                ? findQuickAction("Revisit later")
+                : undefined;
+      const stagePatch = quick
+        ? applyThreadStage(target, quick)
+        : {
+            pipelineStage: action.pipelineStage,
+            lastContactAt: new Date().toISOString(),
+          };
+      await ctx.updateItem(target.id, stagePatch);
+      updated += 1;
     }
   }
 
-  return { foldersCreated, areasCreated };
+  return {
+    foldersCreated,
+    areasCreated,
+    completed,
+    snoozed,
+    unsnoozed,
+    deleted,
+    updated,
+    navigated,
+    reopened,
+    parked,
+    settingsUpdated,
+    exported,
+    bumped,
+    duplicated,
+    restored,
+  };
 }
 
 export async function applyProposals(
@@ -249,6 +717,19 @@ export async function applyProposals(
     items: created,
     foldersCreated: featureStats.foldersCreated,
     areasCreated: featureStats.areasCreated,
+    completed: featureStats.completed,
+    snoozed: featureStats.snoozed,
+    unsnoozed: featureStats.unsnoozed,
+    deleted: featureStats.deleted,
+    updated: featureStats.updated,
+    navigated: featureStats.navigated,
+    reopened: featureStats.reopened,
+    parked: featureStats.parked,
+    settingsUpdated: featureStats.settingsUpdated,
+    exported: featureStats.exported,
+    bumped: featureStats.bumped,
+    duplicated: featureStats.duplicated,
+    restored: featureStats.restored,
   };
 }
 

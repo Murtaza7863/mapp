@@ -220,7 +220,7 @@ export function CategoryView() {
             <input
               value={newCatName}
               onChange={(e) => setNewCatName(e.target.value)}
-              placeholder="e.g. Side project"
+              placeholder="e.g. School"
               className="input-field flex-1 rounded-xl px-3 py-2 text-sm"
             />
             <button
@@ -280,7 +280,7 @@ export function CategoryView() {
                       subgroups: parseSubgroups(e.target.value),
                     })
                   }
-                  placeholder="Subgroups: Tasks, Projects (comma separated)"
+                  placeholder="Subgroups: errands, trips (optional)"
                   className="input-field w-full rounded-xl px-3 py-2 text-xs"
                 />
                 <div className="flex gap-2">
@@ -307,13 +307,10 @@ export function CategoryView() {
 
       {selectedId !== "all" && selectedCategory && (
         <>
-          {selectedCategory.subgroups &&
-            selectedCategory.subgroups.length > 0 && (
-              <SubgroupQuickAddHelp
-                categoryName={selectedCategory.name}
-                subgroups={selectedCategory.subgroups}
-              />
-            )}
+          <SubgroupQuickAddHelp
+            categoryName={selectedCategory.name}
+            subgroups={selectedCategory.subgroups ?? []}
+          />
           <section className="section-block">
             <SectionHeader
               title="Folders"
@@ -330,11 +327,10 @@ export function CategoryView() {
             />
             {containersForArea.length === 0 ? (
               <p className="text-muted text-xs">
-                No folders yet. Create one to group tasks
-                {selectedCategory.subgroups?.length
-                  ? ` by ${selectedCategory.subgroups.join(", ").toLowerCase()}`
-                  : ""}
-                .
+                No folders yet. Create one to group related tasks, or ask Plot:{" "}
+                <span className="text-primary font-mono text-[11px]">
+                  create folder for Travel
+                </span>
               </p>
             ) : (
               renderFolders(containersForArea, selectedCategory)

@@ -29,6 +29,10 @@ function formatResolved(iso: string): string {
   return format(parseISO(iso), "EEE MMM d · h:mm a");
 }
 
+function isCreateKind(kind: ProposedFeatureAction["kind"]): boolean {
+  return kind === "create_folder" || kind === "create_area";
+}
+
 export function ParseConfirmSheet({
   sourceText,
   items,
@@ -46,6 +50,10 @@ export function ParseConfirmSheet({
   const selectedItems = items.filter((i) => i.selected).length;
   const selectedActions = actions.filter((a) => a.selected).length;
   const selectedCount = selectedItems + selectedActions;
+  const hasControl = actions.some((a) => a.selected && !isCreateKind(a.kind));
+  const hasCreate =
+    selectedItems > 0 ||
+    actions.some((a) => a.selected && isCreateKind(a.kind));
 
   const updateItem = (id: string, patch: Partial<ProposedItem>) => {
     onChangeItems(
@@ -64,17 +72,29 @@ export function ParseConfirmSheet({
   const confirmLabel = (() => {
     if (saving) return "Saving…";
     if (selectedCount === 0) return "Skip";
+    if (hasControl && !hasCreate) {
+      return `Apply ${selectedActions} change${selectedActions === 1 ? "" : "s"}`;
+    }
+    if (hasControl && hasCreate) {
+      return `Apply ${selectedCount}`;
+    }
     const parts: string[] = [];
     if (selectedItems > 0) {
       parts.push(`${selectedItems} item${selectedItems === 1 ? "" : "s"}`);
     }
-    if (selectedActions > 0) {
+    const createActions = actions.filter(
+      (a) => a.selected && isCreateKind(a.kind),
+    ).length;
+    if (createActions > 0) {
       parts.push(
-        `${selectedActions} folder${selectedActions === 1 ? "" : "s"}/area${selectedActions === 1 ? "" : "s"}`,
+        `${createActions} folder${createActions === 1 ? "" : "s"}/area${createActions === 1 ? "" : "s"}`,
       );
     }
     return `Add ${parts.join(" + ")}`;
   })();
+
+  const sheetTitle =
+    hasControl && !hasCreate ? "Check before applying" : "Check before adding";
 
   return (
     <div
@@ -91,7 +111,7 @@ export function ParseConfirmSheet({
             <div>
               <div className="mb-1 flex flex-wrap items-center gap-2">
                 <h3 className="text-primary text-lg font-semibold">
-                  Check before adding
+                  {sheetTitle}
                 </h3>
                 {source === "llm" && !refining && (
                   <span className="ai-confirm-badge">On-device</span>
@@ -127,55 +147,174 @@ export function ParseConfirmSheet({
           )}
 
           <div className="space-y-3">
-            {actions.map((action) => (
-              <div key={action.id} className="item-card rounded-lg p-3.5">
-                <div className="mb-2 flex items-start gap-3">
-                  <input
-                    type="checkbox"
-                    checked={action.selected}
-                    onChange={(e) =>
-                      updateAction(action.id, { selected: e.target.checked })
-                    }
-                    className="mt-1"
-                  />
-                  <div className="min-w-0 flex-1 space-y-2">
+            {actions.map((action) => {
+              const needsTarget = Boolean(action.targetQuery);
+              const needsDue =
+                action.kind === "snooze_item" ||
+                (action.kind === "update_item" &&
+                  (action.dueAt || action.patch?.dueAt));
+              const ambiguous =
+                !action.resolvedItemId &&
+                (action.matchCandidates?.length ?? 0) > 0;
+
+              return (
+                <div key={action.id} className="item-card rounded-lg p-3.5">
+                  <div className="mb-2 flex items-start gap-3">
                     <input
-                      value={action.title}
+                      type="checkbox"
+                      checked={action.selected}
+                      disabled={
+                        needsTarget && !action.resolvedItemId && !ambiguous
+                      }
                       onChange={(e) =>
                         updateAction(action.id, {
-                          title: e.target.value,
-                          summary:
-                            action.kind === "create_folder"
-                              ? `New folder “${e.target.value}”`
-                              : `New area “${e.target.value}”`,
+                          selected: e.target.checked,
                         })
                       }
-                      className="input-field w-full rounded-lg px-3 py-2 text-sm"
+                      className="mt-1"
                     />
-                    {action.kind === "create_folder" && (
-                      <select
-                        value={action.categoryId ?? ""}
-                        onChange={(e) =>
-                          updateAction(action.id, {
-                            categoryId: e.target.value,
-                          })
-                        }
-                        className="input-field w-full rounded-lg px-2 py-2 text-xs"
-                      >
-                        {categories.map((cat) => (
-                          <option key={cat.id} value={cat.id}>
-                            {cat.name}
-                          </option>
-                        ))}
-                      </select>
-                    )}
-                    <p className="text-muted text-[11px]">
-                      {featureLabel(action.kind)} · {action.summary}
-                    </p>
+                    <div className="min-w-0 flex-1 space-y-2">
+                      {isCreateKind(action.kind) ? (
+                        <input
+                          value={action.title}
+                          onChange={(e) =>
+                            updateAction(action.id, {
+                              title: e.target.value,
+                              summary:
+                                action.kind === "create_folder"
+                                  ? `New folder “${e.target.value}”`
+                                  : `New area “${e.target.value}”`,
+                            })
+                          }
+                          className="input-field w-full rounded-lg px-3 py-2 text-sm"
+                        />
+                      ) : (
+                        <p className="text-primary text-sm font-medium">
+                          {action.title}
+                        </p>
+                      )}
+
+                      {action.kind === "create_folder" && (
+                        <select
+                          value={action.categoryId ?? ""}
+                          onChange={(e) =>
+                            updateAction(action.id, {
+                              categoryId: e.target.value,
+                            })
+                          }
+                          className="input-field w-full rounded-lg px-2 py-2 text-xs"
+                        >
+                          {categories.map((cat) => (
+                            <option key={cat.id} value={cat.id}>
+                              {cat.name}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+
+                      {ambiguous && action.matchCandidates && (
+                        <select
+                          value={action.resolvedItemId ?? ""}
+                          onChange={(e) => {
+                            const id = e.target.value;
+                            const match = action.matchCandidates?.find(
+                              (m) => m.id === id,
+                            );
+                            updateAction(action.id, {
+                              resolvedItemId: id || undefined,
+                              title: match?.title ?? action.title,
+                              selected: Boolean(id),
+                              navigateTo:
+                                action.kind === "navigate" && id
+                                  ? `/?item=${id}`
+                                  : action.navigateTo,
+                              summary: id
+                                ? action.summary
+                                    .replace(/—.+$/, "")
+                                    .replace(
+                                      /“.+”/,
+                                      `“${match?.title ?? action.title}”`,
+                                    )
+                                : action.summary,
+                            });
+                          }}
+                          className="input-field w-full rounded-lg px-2 py-2 text-xs"
+                        >
+                          <option value="">Pick which task…</option>
+                          {action.matchCandidates.map((m) => (
+                            <option key={m.id} value={m.id}>
+                              {m.title}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+
+                      {needsDue && (
+                        <DatePickerField
+                          value={
+                            (action.dueAt ?? action.patch?.dueAt)?.slice(
+                              0,
+                              10,
+                            ) ?? ""
+                          }
+                          onChange={(date) => {
+                            const time =
+                              (action.dueAt ?? action.patch?.dueAt)?.slice(
+                                11,
+                                16,
+                              ) ?? "09:00";
+                            const iso = date
+                              ? new Date(`${date}T${time}:00`).toISOString()
+                              : undefined;
+                            updateAction(action.id, {
+                              dueAt: iso,
+                              patch: action.patch
+                                ? { ...action.patch, dueAt: iso ?? null }
+                                : undefined,
+                            });
+                          }}
+                          placeholder={
+                            action.kind === "snooze_item"
+                              ? "Snooze until"
+                              : "New due date"
+                          }
+                          className="text-xs"
+                        />
+                      )}
+
+                      {action.kind === "update_item" &&
+                        action.patch?.categoryHint && (
+                          <select
+                            value={
+                              action.patch.categoryId ?? action.categoryId ?? ""
+                            }
+                            onChange={(e) =>
+                              updateAction(action.id, {
+                                categoryId: e.target.value,
+                                patch: {
+                                  ...action.patch,
+                                  categoryId: e.target.value,
+                                },
+                              })
+                            }
+                            className="input-field w-full rounded-lg px-2 py-2 text-xs"
+                          >
+                            {categories.map((cat) => (
+                              <option key={cat.id} value={cat.id}>
+                                {cat.name}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+
+                      <p className="text-muted text-[11px]">
+                        {featureLabel(action.kind)} · {action.summary}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
 
             {items.map((item) => (
               <div key={item.id} className="item-card rounded-lg p-3.5">

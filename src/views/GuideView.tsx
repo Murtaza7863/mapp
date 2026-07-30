@@ -6,8 +6,8 @@ export function GuideView() {
   return (
     <div>
       <PageHeader
-        title="How it works"
-        subtitle={`Get the most out of ${APP_NAME} without the guesswork`}
+        title="How to use"
+        subtitle={`Plot is the command bar for ${APP_NAME}`}
       />
 
       <p className="text-muted mb-5 text-sm leading-relaxed">{GUIDE_INTRO}</p>
@@ -24,11 +24,11 @@ export function GuideView() {
               ))}
             </div>
             {section.examples && section.examples.length > 0 && (
-              <ul className="border-rule bg-paper mt-3 space-y-2 rounded-lg border px-3 py-2.5">
+              <ul className="mt-3 flex flex-wrap gap-2">
                 {section.examples.map((example) => (
                   <li
                     key={example}
-                    className="font-mono text-[11px] leading-relaxed text-[var(--color-block)]"
+                    className="border-rule bg-paper rounded-lg border px-2.5 py-1.5 font-mono text-[11px] leading-snug text-[var(--color-block)]"
                   >
                     {example}
                   </li>

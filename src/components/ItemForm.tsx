@@ -253,7 +253,7 @@ export function ItemForm({
             {type === "project" && (
               <div>
                 <label className="section-label mb-1.5 block">
-                  Goal count (optional)
+                  Target count (optional)
                 </label>
                 <input
                   type="number"
@@ -261,7 +261,7 @@ export function ItemForm({
                   value={goalCount}
                   onChange={(e) => setGoalCount(e.target.value)}
                   className="input-field w-full rounded-xl px-3 py-2.5"
-                  placeholder="e.g. 5 new companies"
+                  placeholder="e.g. 5"
                 />
               </div>
             )}
@@ -328,13 +328,13 @@ export function ItemForm({
               <div className="border-rule space-y-3 rounded-xl border p-3.5">
                 <div>
                   <label className="section-label mb-1.5 block">
-                    Company / person
+                    Person or name
                   </label>
                   <input
                     value={contactName}
                     onChange={(e) => setContactName(e.target.value)}
                     className="input-field w-full rounded-xl px-3 py-2.5"
-                    placeholder="e.g. Acme Corp"
+                    placeholder="e.g. Jordan"
                   />
                 </div>
                 <div>
@@ -363,7 +363,7 @@ export function ItemForm({
                     value={nextAction}
                     onChange={(e) => setNextAction(e.target.value)}
                     className="input-field w-full rounded-xl px-3 py-2.5"
-                    placeholder="e.g. Send follow-up email"
+                    placeholder="e.g. Reply with times"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-2">

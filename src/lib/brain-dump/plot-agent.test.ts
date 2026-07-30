@@ -91,18 +91,57 @@ describe("plot agent apply", () => {
     expect(created.items[0].categoryId).toBe(area?.id);
   });
 
-  it("creates area on for-tail when missing", async () => {
-    const dump = "follow up with Acme Corp for ATLAS";
-    const { items: proposals } = await parseBrainDump(dump, {
+  it("applies complete and snooze against existing items", async () => {
+    const rent = createItem({
+      title: "Pay rent",
+      type: "deadline",
+      categoryId: categories[0]?.id ?? "",
+    });
+    await db.items.add(rent);
+    items.push(rent);
+
+    const markDone = vi.fn(async (item: (typeof items)[0]) => {
+      item.status = "done";
+    });
+    const snoozeFn = vi.fn(async (item: (typeof items)[0], until: Date) => {
+      item.status = "snoozed";
+      item.snoozedUntil = until.toISOString();
+    });
+
+    const { actions } = await parseBrainDump("done: pay rent", {
       categories,
       preferLlm: false,
+      items,
     });
-    await applyProposals(proposals, ctx());
+    expect(actions[0]?.resolvedItemId).toBe(rent.id);
 
-    expect(categories.some((c) => c.name === "ATLAS")).toBe(true);
-    const task = items.find((i) => i.type === "follow-up");
-    expect(task?.categoryId).toBe(
-      categories.find((c) => c.name === "ATLAS")?.id,
+    const applied = await applyProposals(
+      [],
+      { ...ctx(), markDone },
+      { actions },
     );
+    expect(applied.completed).toBe(1);
+    expect(markDone).toHaveBeenCalled();
+
+    const gym = createItem({
+      title: "Gym",
+      type: "routine",
+      categoryId: categories[0]?.id ?? "",
+    });
+    await db.items.add(gym);
+    items.push(gym);
+
+    const snoozeParsed = await parseBrainDump("snooze gym until friday", {
+      categories,
+      preferLlm: false,
+      items,
+    });
+    const snoozed = await applyProposals(
+      [],
+      { ...ctx(), snooze: snoozeFn },
+      { actions: snoozeParsed.actions },
+    );
+    expect(snoozed.snoozed).toBe(1);
+    expect(snoozeFn).toHaveBeenCalled();
   });
 });

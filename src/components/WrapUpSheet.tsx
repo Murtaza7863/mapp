@@ -1,6 +1,6 @@
-import { addDays, setHours, setMinutes, startOfDay } from "date-fns";
-
 import type { WrapUpSummary } from "../lib/wrapup";
+
+export { tomorrowMorning } from "../lib/wrapup";
 
 interface Props {
   summary: WrapUpSummary;
@@ -74,9 +74,4 @@ function Stat({ label, value }: { label: string; value: number }) {
       <p className="text-primary text-xl font-semibold tabular-nums">{value}</p>
     </div>
   );
-}
-
-export function tomorrowMorning(now = new Date()): Date {
-  const d = addDays(startOfDay(now), 1);
-  return setMinutes(setHours(d, 9), 0);
 }

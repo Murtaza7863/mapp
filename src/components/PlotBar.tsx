@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import type { ParseDumpResult } from "../lib/brain-dump/types";
-import type { Category } from "../types";
+import type { Category, Item } from "../types";
 
 import { checkWebGPU, warmupPlotEngine } from "../lib/brain-dump/llm-engine";
 import {
@@ -17,6 +17,8 @@ import { ParseConfirmSheet } from "./ParseConfirmSheet";
 
 interface Props {
   categories: Category[];
+  /** Existing tasks — Plot matches complete/snooze/delete against these */
+  items?: Item[];
   onParsed: (result: ParseDumpResult) => void | Promise<void>;
   initialText?: string;
 }
@@ -31,7 +33,12 @@ function modelStatusText(report: { text?: string; progress?: number }): string {
   return "Loading model…";
 }
 
-export function PlotBar({ categories, onParsed, initialText }: Props) {
+export function PlotBar({
+  categories,
+  items = [],
+  onParsed,
+  initialText,
+}: Props) {
   const [value, setValue] = useState(initialText ?? "");
   const [expanded, setExpanded] = useState(Boolean(initialText));
   const [phase, setPhase] = useState<Phase>("idle");
@@ -126,7 +133,7 @@ export function PlotBar({ categories, onParsed, initialText }: Props) {
     setStatusText(null);
     userEditedRef.current = false;
 
-    const rulesResult = parseRulesDump(trimmed, categories);
+    const rulesResult = parseRulesDump(trimmed, categories, items);
     const hasRules =
       rulesResult.items.length > 0 || rulesResult.actions.length > 0;
     const needsLlm =
@@ -145,7 +152,7 @@ export function PlotBar({ categories, onParsed, initialText }: Props) {
       setPhase("loading");
       setStatusText("Loading model…");
     } else {
-      setError("Nothing found — try a task with a day or time.");
+      setError("Nothing found — try a task or command (done:, snooze, open…).");
       return;
     }
 
@@ -160,6 +167,7 @@ export function PlotBar({ categories, onParsed, initialText }: Props) {
         (report) => {
           setStatusText(modelStatusText(report));
         },
+        items,
       );
 
       if (!hasRules) {
@@ -167,7 +175,9 @@ export function PlotBar({ categories, onParsed, initialText }: Props) {
           !llmResult ||
           (llmResult.items.length === 0 && llmResult.actions.length === 0)
         ) {
-          setError("Nothing found — try a task with a day or time.");
+          setError(
+            "Nothing found — try a task or command (done:, snooze, open…).",
+          );
           setPhase("idle");
           setResult(null);
           return;
@@ -240,9 +250,13 @@ export function PlotBar({ categories, onParsed, initialText }: Props) {
               }}
               onFocus={() => setExpanded(true)}
               onKeyDown={onKeyDown}
-              placeholder={listening ? "Listening…" : "What's on your mind?"}
+              placeholder={
+                listening
+                  ? "Listening…"
+                  : "Plot anything — tasks, done:, snooze, open…"
+              }
               className="compose-bar-input"
-              aria-label="Add a task"
+              aria-label="Plot tasks or commands"
               disabled={barBusy || saving}
             />
             <div className="compose-bar-actions">
@@ -271,9 +285,13 @@ export function PlotBar({ categories, onParsed, initialText }: Props) {
                 onClick={() => void runPlot()}
                 disabled={!canSubmit}
                 className="compose-bar-go"
-                aria-label="Add"
+                aria-label="Plot"
               >
-                {showSpinner ? <span className="compose-bar-spinner" /> : "Add"}
+                {showSpinner ? (
+                  <span className="compose-bar-spinner" />
+                ) : (
+                  "Plot"
+                )}
               </button>
             </div>
           </div>

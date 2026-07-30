@@ -19,25 +19,23 @@ For a permanent URL, deploy `dist/` to Cloudflare Pages, Vercel, or Netlify (see
 
 ## Capture
 
-Type natural language on the home screen. Plotline uses a **fast rules parser** first, then optionally refines with an **on-device model** (WebGPU):
+Type natural language on the home screen. Plotline uses a **fast rules parser** first, then optionally refines with an **on-device model** (WebGPU).
 
-1. **Rules** — handles dates, areas, follow-ups, comma lists, agentic structure (`ATLAS > Outreach > Sponsors > …`)
-2. **LLM** — Llama 3.2 1B with JSON-schema output when rules need help (messy dumps, missing items)
-
-No API key. Models download once and run locally.
+Plot adds tasks **and** controls the app — complete, snooze, reschedule, open screens, and more — with a confirm sheet before anything saves.
 
 ```
 email prof about extension tomorrow #work
 ```
 
 ```
-just finished call with Acme Corp, follow up with them by friday for ATLAS
+done: pay rent
+snooze dentist until friday
+open calendar
 ```
 
 ```
-ATLAS > Outreach > Sponsors > email venue by monday
+Travel: pack bags friday #personal
 ```
-
 ## Tech
 
 - React + Vite PWA

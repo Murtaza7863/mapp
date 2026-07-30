@@ -60,7 +60,7 @@ export function EventDeadlinesView() {
         <EmptyState
           icon={<CalendarIcon className="h-5 w-5" />}
           title="No linked events"
-          description="Add a follow-up with a linked event date — prep deadlines are calculated automatically (10 weeks before)."
+          description="Add an event date on a task — prep reminders land automatically (about 10 weeks out)."
         />
       ) : (
         <>

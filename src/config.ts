@@ -3,7 +3,7 @@
 export const APP_NAME = "Plotline";
 export const APP_TAGLINE = "Plot your day in plain English.";
 export const APP_DESCRIPTION =
-  "Offline planner for areas, deadlines, and natural-language capture. Your data stays on your device.";
+  "Offline planner you control in plain English — tasks, follow-ups, and the whole app. Your data stays on your device.";
 
 const env = import.meta.env;
 

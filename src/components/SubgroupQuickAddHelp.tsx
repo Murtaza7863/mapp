@@ -4,32 +4,39 @@ interface Props {
 }
 
 export function SubgroupQuickAddHelp({ categoryName, subgroups }: Props) {
-  const exampleGroup = subgroups[0]?.toLowerCase() ?? "tasks";
+  const exampleGroup = subgroups[0] ?? "Tasks";
   const tag = categoryName.toLowerCase().replace(/\s+/g, "");
 
   return (
     <details className="item-card rounded-xl p-3 text-sm">
       <summary className="text-muted cursor-pointer text-xs font-medium">
-        Quick-add syntax for {categoryName}
+        Plot tips for {categoryName}
       </summary>
       <ul className="text-muted mt-2 space-y-1.5 text-[11px] leading-relaxed">
         <li>
-          <code className="text-primary">
-            Project name {exampleGroup}: Task title
-          </code>{" "}
-          — folder + subgroup + task
+          Add a task:{" "}
+          <code className="text-primary">buy milk tomorrow #{tag}</code>
         </li>
         <li>
-          <code className="text-primary">Folder name: Task title</code> —
-          folder + task
+          Folder + task:{" "}
+          <code className="text-primary">Travel: pack bags friday</code>
+        </li>
+        {subgroups.length > 0 && (
+          <li>
+            Folder + subgroup:{" "}
+            <code className="text-primary">
+              Trip {exampleGroup}: book flights
+            </code>
+          </li>
+        )}
+        <li>
+          Update existing: <code className="text-primary">done: buy milk</code>
+          {" · "}
+          <code className="text-primary">snooze dentist until friday</code>
         </li>
         <li>
-          Add dates: <code className="text-primary">tomorrow 9am</code>,{" "}
-          <code className="text-primary">friday 5pm</code>
-        </li>
-        <li>
-          Tag area: <code className="text-primary">#{tag}</code> · priority:{" "}
-          <code className="text-primary">!</code>
+          Open this area:{" "}
+          <code className="text-primary">show area {categoryName}</code>
         </li>
       </ul>
     </details>

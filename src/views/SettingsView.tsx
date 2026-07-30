@@ -424,10 +424,10 @@ export function SettingsView() {
         </p>
         <p className="mt-2">
           <Link to="/guide" className="text-block font-medium">
-            How it works
+            How to use
           </Link>
           {" · "}
-          tips for capture, dates, and avoiding parse frustration.
+          Plot commands, dates, and confirm-before-save tips.
         </p>
         <p className="mt-2">Device ID: {settings?.deviceId?.slice(0, 8)}…</p>
       </section>

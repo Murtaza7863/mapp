@@ -61,7 +61,7 @@ export interface Item {
   /** Parent project / folder */
   parentId?: string;
   sortOrder?: number;
-  /** Target count for outreach-style projects (e.g. 5 new companies) */
+  /** Optional target count for a folder (e.g. 5 chapters, 12 workouts) */
   goalCount?: number;
   /** Subgroup label inside a folder — configured per area */
   childGroup?: string;
@@ -123,9 +123,9 @@ export const SCHOOL_KIND_LABELS: Record<SchoolKind, string> = {
 };
 
 export const PIPELINE_STAGE_LABELS: Record<PipelineStage, string> = {
-  outreach: "Outreach sent",
+  outreach: "Reached out",
   waiting: "Waiting on them",
-  scheduling: "Scheduling stalled",
+  scheduling: "Needs a time",
   deferred: "Revisit later",
   my_turn: "Your turn",
 };

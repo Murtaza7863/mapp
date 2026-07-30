@@ -48,7 +48,7 @@ export function ProjectsView() {
         <EmptyState
           icon={<FolderIcon className="h-4 w-4" />}
           title="No folders yet"
-          description="Open an area and tap + New folder, or create one here."
+          description="Create one from an area, or Plot: create folder for Travel"
         />
       ) : (
         <div className="page-block">

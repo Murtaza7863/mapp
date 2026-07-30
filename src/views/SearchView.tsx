@@ -35,7 +35,7 @@ export function SearchView() {
   const { categories, getCategory } = useCategories();
   const { deleteWithUndo } = useUndo();
   const [searchParams] = useSearchParams();
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(() => searchParams.get("q") ?? "");
   const [typeFilter, setTypeFilter] = useState<Item["type"] | "all">("all");
   const [statusFilter, setStatusFilter] = useState<Item["status"] | "all">(
     () => {
@@ -65,6 +65,8 @@ export function SearchView() {
     ) {
       setStatusFilter(fromUrl);
     }
+    const q = searchParams.get("q");
+    if (q !== null) setQuery(q);
   }, [searchParams]);
 
   const results = useMemo(

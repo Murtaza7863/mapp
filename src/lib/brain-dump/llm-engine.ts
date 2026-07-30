@@ -1,7 +1,7 @@
 import type { InitProgressCallback, MLCEngine } from "@mlc-ai/web-llm";
 
 import { config } from "../../config";
-import type { Category } from "../../types";
+import type { Category, Item } from "../../types";
 
 import { buildPlotLlmPrompt, estimatePlotMaxTokens } from "./llm-prompt";
 import { PLOT_OUTPUT_SCHEMA, PLOT_SYSTEM_PROMPT } from "./llm-schema";
@@ -147,6 +147,7 @@ export interface PlotLlmRequest {
   dump: string;
   categories: Category[];
   rulesPreview?: ProposedItem[];
+  pendingItems?: Item[];
   onProgress?: InitProgressCallback;
 }
 
@@ -158,6 +159,8 @@ export async function generatePlotParse(
     request.dump,
     request.categories,
     request.rulesPreview ?? [],
+    new Date(),
+    request.pendingItems ?? [],
   );
 
   const response = await engine.chat.completions.create({
