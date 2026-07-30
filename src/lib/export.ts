@@ -115,8 +115,14 @@ export async function downloadJson(data: unknown, filename: string) {
   if (typeof navigator.share === "function" && isIos()) {
     const file = new File([blob], filename, { type: "application/json" });
     if (navigator.canShare?.({ files: [file] })) {
-      await navigator.share({ files: [file] });
-      return;
+      try {
+        await navigator.share({ files: [file] });
+        return;
+      } catch (err) {
+        // Dismissing the iOS share sheet rejects; that is not a failure.
+        if (err instanceof Error && err.name === "AbortError") return;
+        throw err;
+      }
     }
   }
 
@@ -125,5 +131,6 @@ export async function downloadJson(data: unknown, filename: string) {
   a.href = url;
   a.download = filename;
   a.click();
-  URL.revokeObjectURL(url);
+  // Revoking synchronously can cancel the download before it starts.
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }

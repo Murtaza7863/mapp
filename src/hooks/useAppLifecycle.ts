@@ -40,13 +40,14 @@ export function useAppLifecycle() {
     const onVisibility = () => {
       if (document.visibilityState === "visible") void onResume();
     };
+    const onFocus = () => void onResume();
     document.addEventListener("visibilitychange", onVisibility);
-    window.addEventListener("focus", () => void onResume());
+    window.addEventListener("focus", onFocus);
 
     return () => {
       clearInterval(interval);
       document.removeEventListener("visibilitychange", onVisibility);
-      window.removeEventListener("focus", () => void onResume());
+      window.removeEventListener("focus", onFocus);
     };
   }, []);
 }

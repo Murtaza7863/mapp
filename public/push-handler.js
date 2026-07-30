@@ -1,3 +1,8 @@
+// Paths are resolved against the registration scope so the app keeps working
+// when it is hosted under a sub-path (e.g. GitHub Pages project sites).
+const scopeUrl = () => new URL(self.registration.scope);
+const scoped = (path) => new URL(`.${path}`, scopeUrl()).href;
+
 self.addEventListener("push", (event) => {
   let data = { title: "Plotline", body: "You have something due", url: "/" };
   try {
@@ -9,8 +14,8 @@ self.addEventListener("push", (event) => {
   event.waitUntil(
     self.registration.showNotification(data.title, {
       body: data.body,
-      icon: "/pwa-192.png",
-      badge: "/pwa-192.png",
+      icon: scoped("/pwa-192.png"),
+      badge: scoped("/pwa-192.png"),
       data: { url: data.url ?? "/" },
     }),
   );
@@ -19,7 +24,7 @@ self.addEventListener("push", (event) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const path = event.notification.data?.url ?? "/";
-  const target = new URL(path, self.location.origin).href;
+  const target = scoped(path);
 
   event.waitUntil(
     clients

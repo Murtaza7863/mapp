@@ -6,6 +6,23 @@ import { CloseIcon } from "./icons";
 const DISMISS_KEY = "install-prompt-dismissed";
 const VISITS_KEY = "install-prompt-visits";
 
+/** Storage throws in iOS private mode — never let a banner take down the app. */
+function readFlag(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function writeFlag(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    /* ignore */
+  }
+}
+
 /**
  * Soft install tip for iOS Safari. Skips the first open so Plot gets the
  * spotlight, then shows a one-line banner until dismissed.
@@ -20,10 +37,10 @@ export function InstallPrompt() {
       ("standalone" in navigator &&
         (navigator as { standalone?: boolean }).standalone);
     if (!ios || standalone) return;
-    if (localStorage.getItem(DISMISS_KEY)) return;
+    if (readFlag(DISMISS_KEY)) return;
 
-    const visits = Number(localStorage.getItem(VISITS_KEY) ?? "0") + 1;
-    localStorage.setItem(VISITS_KEY, String(visits));
+    const visits = Number(readFlag(VISITS_KEY) ?? "0") + 1;
+    writeFlag(VISITS_KEY, String(visits));
     setShow(visits >= 2);
   }, []);
 
@@ -38,7 +55,7 @@ export function InstallPrompt() {
       <button
         type="button"
         onClick={() => {
-          localStorage.setItem(DISMISS_KEY, "1");
+          writeFlag(DISMISS_KEY, "1");
           setShow(false);
         }}
         className="text-muted shrink-0 p-0.5"
