@@ -763,25 +763,6 @@ body {
   color: var(--color-block);
 }
 
-.compose-bar-listening {
-  border-color: var(--color-mark) !important;
-  box-shadow: 0 0 0 3px rgba(184, 134, 11, 0.15);
-}
-
-.compose-bar-mic {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.5rem !important;
-  min-width: 2.25rem;
-}
-
-.compose-bar-mic-active {
-  border-color: var(--color-mark) !important;
-  color: var(--color-mark);
-  background: #fdf6e8;
-}
-
 .briefing-wrap {
   margin-bottom: 0.25rem;
 }

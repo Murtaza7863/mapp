@@ -127,7 +127,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
   {
     title: "When something looks wrong",
     body: [
-      "Edit in the confirm sheet, or use the date picker. Voice is a draft — quiet rooms work best.",
+      "Edit in the confirm sheet, or use the date picker to fix a time.",
       "Stuck? Use a short line like “call jordan friday” and fix details after.",
     ],
   },

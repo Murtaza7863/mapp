@@ -10,8 +10,6 @@ import {
   shouldUseLlm,
 } from "../lib/brain-dump/parse-dump";
 import { readClipboardText } from "../lib/clipboard";
-import { isSpeechRecognitionSupported, listenForSpeech } from "../lib/speech";
-import { MicIcon } from "./icons";
 import { OnDeviceAiBadge } from "./OnDeviceAiBadge";
 import { ParseConfirmSheet } from "./ParseConfirmSheet";
 
@@ -49,13 +47,8 @@ export function PlotBar({
   const [refining, setRefining] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showSpinner, setShowSpinner] = useState(false);
-  const [listening, setListening] = useState(false);
   const userEditedRef = useRef(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const stopListenRef = useRef<(() => void) | null>(null);
-  const voiceBaseRef = useRef("");
-
-  const speechSupported = isSpeechRecognitionSupported();
 
   useEffect(() => {
     void checkWebGPU().then((ok) => {
@@ -71,10 +64,6 @@ export function PlotBar({
     }
   }, [initialText]);
 
-  useEffect(() => {
-    return () => stopListenRef.current?.();
-  }, []);
-
   const paste = async () => {
     const text = await readClipboardText();
     if (!text) return;
@@ -83,38 +72,8 @@ export function PlotBar({
     inputRef.current?.focus();
   };
 
-  const toggleVoice = () => {
-    if (listening) {
-      stopListenRef.current?.();
-      stopListenRef.current = null;
-      setListening(false);
-      return;
-    }
-
-    voiceBaseRef.current = value.trim() ? `${value.trim()} ` : "";
-    setListening(true);
-    setError(null);
-    setExpanded(true);
-
-    stopListenRef.current = listenForSpeech({
-      onPartial: (text) => setValue(voiceBaseRef.current + text),
-      onFinal: (text) => {
-        setValue(voiceBaseRef.current + text);
-        setListening(false);
-        stopListenRef.current = null;
-        inputRef.current?.focus();
-      },
-      onError: (msg) => {
-        setError(msg);
-        setListening(false);
-        stopListenRef.current = null;
-      },
-    });
-  };
-
   const barBusy = phase === "loading";
-  const canSubmit =
-    value.trim().length > 0 && !barBusy && !saving && !listening;
+  const canSubmit = value.trim().length > 0 && !barBusy && !saving;
 
   useEffect(() => {
     if (!barBusy) {
@@ -238,7 +197,7 @@ export function PlotBar({
 
         <div className="compose-bar-wrap">
           <div
-            className={`compose-bar ${expanded ? "compose-bar-expanded" : ""} ${barBusy ? "compose-bar-busy" : ""} ${listening ? "compose-bar-listening" : ""}`}
+            className={`compose-bar ${expanded ? "compose-bar-expanded" : ""} ${barBusy ? "compose-bar-busy" : ""}`}
           >
             <textarea
               ref={inputRef}
@@ -250,33 +209,18 @@ export function PlotBar({
               }}
               onFocus={() => setExpanded(true)}
               onKeyDown={onKeyDown}
-              placeholder={
-                listening
-                  ? "Listening…"
-                  : "Plot anything — tasks, done:, snooze, open…"
-              }
+              placeholder="Plot anything — tasks, done:, snooze, open…"
               className="compose-bar-input"
               aria-label="Plot tasks or commands"
               disabled={barBusy || saving}
             />
             <div className="compose-bar-actions">
-              {speechSupported && (
-                <button
-                  type="button"
-                  onClick={toggleVoice}
-                  className={`compose-bar-secondary compose-bar-mic ${listening ? "compose-bar-mic-active" : ""}`}
-                  aria-label={listening ? "Stop listening" : "Voice input"}
-                  disabled={barBusy || saving}
-                >
-                  <MicIcon className="h-4 w-4" />
-                </button>
-              )}
               <button
                 type="button"
                 onClick={() => void paste()}
                 className="compose-bar-secondary"
                 aria-label="Paste from clipboard"
-                disabled={barBusy || saving || listening}
+                disabled={barBusy || saving}
               >
                 Paste
               </button>

@@ -220,15 +220,6 @@ export function SparkIcon({ className, style }: IconProps) {
   );
 }
 
-export function MicIcon({ className, style }: IconProps) {
-  return (
-    <svg {...base} className={className} style={style}>
-      <path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3z" />
-      <path d="M19 11a7 7 0 0 1-14 0M12 18v3" />
-    </svg>
-  );
-}
-
 export function CpuIcon({ className, style }: IconProps) {
   return (
     <svg {...base} className={className} style={style}>

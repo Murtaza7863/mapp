@@ -1,5 +1,5 @@
 import { parseISO } from "date-fns";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 
 import type { Category, Item } from "../types";
@@ -50,6 +50,8 @@ export function CategoryView() {
   const [snoozeItem, setSnoozeItem] = useState<Item | null>(null);
   const [managing, setManaging] = useState(false);
   const [newCatName, setNewCatName] = useState("");
+  const [addingCat, setAddingCat] = useState(false);
+  const newCatRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const areaId = (location.state as LocationState | null)?.areaId;
@@ -99,21 +101,27 @@ export function CategoryView() {
   });
 
   const handleAddCategory = async () => {
-    if (!newCatName.trim()) return;
+    const name = newCatName.trim();
+    if (!name || addingCat) return;
     const colors = ["#f97316", "#ec4899", "#14b8a6", "#eab308", "#6366f1"];
-    await addCategory({
-      name: newCatName.trim(),
-      color: colors[categories.length % colors.length],
-      icon: "folder",
-    });
-    setNewCatName("");
+    setAddingCat(true);
+    try {
+      const created = await addCategory({
+        name,
+        color: colors[categories.length % colors.length],
+        icon: "folder",
+      });
+      setNewCatName("");
+      setSelectedId(created.id);
+      toast(`Added “${created.name}”`);
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Could not add area", {
+        kind: "error",
+      });
+    } finally {
+      setAddingCat(false);
+    }
   };
-
-  const parseSubgroups = (value: string): string[] =>
-    value
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
 
   const renderTaskList = (list: Item[], cat?: Category) => (
     <div className="item-list">
@@ -202,6 +210,17 @@ export function CategoryView() {
             onClick={() => setSelectedId(cat.id)}
           />
         ))}
+        <button
+          type="button"
+          onClick={() => {
+            setManaging(true);
+            requestAnimationFrame(() => newCatRef.current?.focus());
+          }}
+          className="btn-ghost inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-sm font-medium"
+        >
+          <PlusIcon className="h-3.5 w-3.5" />
+          Area
+        </button>
       </div>
 
       {managing && (
@@ -216,90 +235,57 @@ export function CategoryView() {
               Done
             </button>
           </div>
-          <div className="flex gap-2">
+          <form
+            className="flex gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void handleAddCategory();
+            }}
+          >
             <input
+              ref={newCatRef}
               value={newCatName}
               onChange={(e) => setNewCatName(e.target.value)}
-              placeholder="e.g. School"
+              placeholder="New area, e.g. School"
+              enterKeyHint="done"
+              autoCapitalize="words"
+              autoCorrect="off"
               className="input-field flex-1 rounded-xl px-3 py-2 text-sm"
+              aria-label="New area name"
             />
             <button
-              type="button"
-              onClick={handleAddCategory}
-              className="btn-primary shrink-0 rounded-xl px-4 text-sm"
+              type="submit"
+              disabled={!newCatName.trim() || addingCat}
+              className="btn-primary shrink-0 rounded-xl px-4 text-sm disabled:opacity-50"
             >
-              Add
+              {addingCat ? "Adding…" : "Add"}
             </button>
-          </div>
+          </form>
           <div className="mt-4 space-y-3">
             {categories.map((cat) => (
-              <div
+              <AreaRow
                 key={cat.id}
-                className="border-rule space-y-2 border-b pb-3 last:border-0 last:pb-0"
-              >
-                <div className="flex items-center gap-2">
-                  <input
-                    value={cat.name}
-                    onChange={(e) =>
-                      updateCategory(cat.id, { name: e.target.value })
-                    }
-                    className="input-field flex-1 rounded-xl px-3 py-2 text-sm"
-                  />
-                  <input
-                    type="color"
-                    value={cat.color}
-                    onChange={(e) =>
-                      updateCategory(cat.id, { color: e.target.value })
-                    }
-                    className="h-8 w-10 rounded border-0 bg-transparent"
-                  />
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      try {
-                        await deleteCategory(cat.id);
-                        if (selectedId === cat.id) setSelectedId("all");
-                      } catch (err) {
-                        toast(
-                          err instanceof Error
-                            ? err.message
-                            : "Could not delete area",
-                          { kind: "error" },
-                        );
-                      }
-                    }}
-                    className="text-danger text-sm"
-                  >
-                    Delete
-                  </button>
-                </div>
-                <input
-                  value={(cat.subgroups ?? []).join(", ")}
-                  onChange={(e) =>
-                    updateCategory(cat.id, {
-                      subgroups: parseSubgroups(e.target.value),
-                    })
+                category={cat}
+                onRename={(name) => updateCategory(cat.id, { name })}
+                onRecolor={(color) => updateCategory(cat.id, { color })}
+                onSubgroups={(subgroups) =>
+                  updateCategory(cat.id, { subgroups })
+                }
+                onMove={(dir) => void moveCategory(cat.id, dir)}
+                onDelete={async () => {
+                  try {
+                    await deleteCategory(cat.id);
+                    if (selectedId === cat.id) setSelectedId("all");
+                  } catch (err) {
+                    toast(
+                      err instanceof Error
+                        ? err.message
+                        : "Could not delete area",
+                      { kind: "error" },
+                    );
                   }
-                  placeholder="Subgroups: errands, trips (optional)"
-                  className="input-field w-full rounded-xl px-3 py-2 text-xs"
-                />
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => moveCategory(cat.id, "up")}
-                    className="btn-ghost flex-1 rounded-lg py-2 text-xs"
-                  >
-                    Move up
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => moveCategory(cat.id, "down")}
-                    className="btn-ghost flex-1 rounded-lg py-2 text-xs"
-                  >
-                    Move down
-                  </button>
-                </div>
-              </div>
+                }}
+              />
             ))}
           </div>
         </div>
@@ -474,6 +460,109 @@ export function CategoryView() {
           }}
         />
       )}
+    </div>
+  );
+}
+
+/**
+ * Keeps edits in local state and commits on blur. Writing to Dexie on every
+ * keystroke round-trips through the live query, which drops characters and
+ * jumps the caret on mobile Safari.
+ */
+function AreaRow({
+  category,
+  onRename,
+  onRecolor,
+  onSubgroups,
+  onMove,
+  onDelete,
+}: {
+  category: Category;
+  onRename: (name: string) => void;
+  onRecolor: (color: string) => void;
+  onSubgroups: (subgroups: string[]) => void;
+  onMove: (direction: "up" | "down") => void;
+  onDelete: () => void;
+}) {
+  const [name, setName] = useState(category.name);
+  const [groups, setGroups] = useState((category.subgroups ?? []).join(", "));
+
+  useEffect(() => setName(category.name), [category.name]);
+  useEffect(
+    () => setGroups((category.subgroups ?? []).join(", ")),
+    [category.subgroups],
+  );
+
+  const commitName = () => {
+    const next = name.trim();
+    if (!next) {
+      setName(category.name);
+      return;
+    }
+    if (next !== category.name) onRename(next);
+  };
+
+  const commitGroups = () => {
+    const parsed = groups
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (parsed.join(", ") !== (category.subgroups ?? []).join(", ")) {
+      onSubgroups(parsed);
+    }
+  };
+
+  return (
+    <div className="border-rule space-y-2 border-b pb-3 last:border-0 last:pb-0">
+      <div className="flex items-center gap-2">
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onBlur={commitName}
+          enterKeyHint="done"
+          className="input-field flex-1 rounded-xl px-3 py-2 text-sm"
+          aria-label={`Rename ${category.name}`}
+        />
+        <input
+          type="color"
+          value={category.color}
+          onChange={(e) => onRecolor(e.target.value)}
+          className="h-8 w-10 rounded border-0 bg-transparent"
+          aria-label={`Color for ${category.name}`}
+        />
+        <button
+          type="button"
+          onClick={onDelete}
+          className="text-danger text-sm"
+        >
+          Delete
+        </button>
+      </div>
+      <input
+        value={groups}
+        onChange={(e) => setGroups(e.target.value)}
+        onBlur={commitGroups}
+        enterKeyHint="done"
+        placeholder="Subgroups: errands, trips (optional)"
+        className="input-field w-full rounded-xl px-3 py-2 text-xs"
+        aria-label={`Subgroups for ${category.name}`}
+      />
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => onMove("up")}
+          className="btn-ghost flex-1 rounded-lg py-2 text-xs"
+        >
+          Move up
+        </button>
+        <button
+          type="button"
+          onClick={() => onMove("down")}
+          className="btn-ghost flex-1 rounded-lg py-2 text-xs"
+        >
+          Move down
+        </button>
+      </div>
     </div>
   );
 }
