@@ -1,5 +1,6 @@
 import {
   buildDigest,
+  deliveryKey,
   digestKeyFor,
   dueNotifications,
   isDigestDue,
@@ -277,7 +278,7 @@ async function processDevice(
       return;
     }
     if (result.status === "sent") {
-      sent[notification.id] = new Date(now).toISOString();
+      sent[deliveryKey(notification)] = new Date(now).toISOString();
       changed = true;
     } else {
       console.error(`push failed for ${deviceId}: ${result.detail}`);

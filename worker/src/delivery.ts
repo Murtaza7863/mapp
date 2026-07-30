@@ -17,13 +17,24 @@ export const LOOKBACK_MS = 15 * 60 * 1000;
 /** A digest is a summary of the day, so it is worthless hours late. */
 export const DIGEST_WINDOW_MINUTES = 30;
 
+/**
+ * Dedupes on id + fireAt, not id alone.
+ *
+ * Client ids are stable (`item-7-due`, `item-7-chase`). fireAt changes when the
+ * user snoozes, reschedules, or a chase nudge rolls to the next morning. Keying
+ * only on id would suppress those legitimate re-fires for the sent-log TTL.
+ */
+export function deliveryKey(notification: ScheduledNotification): string {
+  return `${notification.id}@${notification.fireAt}`;
+}
+
 export function isDeliverable(
   notification: ScheduledNotification,
   sent: SentLog,
   now: number,
   lookbackMs = LOOKBACK_MS,
 ): boolean {
-  if (sent[notification.id]) return false;
+  if (sent[deliveryKey(notification)]) return false;
   const fireAt = Date.parse(notification.fireAt);
   if (!Number.isFinite(fireAt)) return false;
   return fireAt <= now && fireAt > now - lookbackMs;

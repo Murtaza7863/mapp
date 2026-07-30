@@ -113,7 +113,7 @@ export function SettingsView() {
       await updateSettings({ lastManualBackupAt: new Date().toISOString() });
       showStatus("Export ready");
     } catch (err) {
-      showStatus(err instanceof Error ? err.message : "Export failed");
+      showStatus(err instanceof Error ? err.message : "Export failed", "error");
     }
   };
 
@@ -145,9 +145,15 @@ export function SettingsView() {
     try {
       const result = await registerPushSubscription();
       setNotifyPermission(Notification.permission);
-      showStatus(result.ok ? "Notifications on" : result.reason);
+      showStatus(
+        result.ok ? "Notifications on" : result.reason,
+        result.ok ? "success" : "error",
+      );
     } catch (err) {
-      showStatus(err instanceof Error ? err.message : "Push setup failed");
+      showStatus(
+        err instanceof Error ? err.message : "Push setup failed",
+        "error",
+      );
     }
   };
 

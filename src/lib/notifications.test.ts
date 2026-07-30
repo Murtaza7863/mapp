@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import { createItem } from "./items";
-import { buildScheduledNotifications, currentTimeZone } from "./notifications";
+import {
+  buildScheduledNotifications,
+  currentTimeZone,
+  subscriptionMatchesVapidKey,
+  urlBase64ToUint8Array,
+} from "./notifications";
 
 describe("buildScheduledNotifications", () => {
   const now = new Date("2026-07-26T12:00:00").getTime();
@@ -74,5 +79,47 @@ describe("currentTimeZone", () => {
     expect(() =>
       new Intl.DateTimeFormat("en-CA", { timeZone: zone }).format(new Date()),
     ).not.toThrow();
+  });
+});
+
+describe("subscriptionMatchesVapidKey", () => {
+  const publicKey =
+    "BE3diAYpBBCuv-i3GF0sAvhwaJGSY_BMuzqlQIvAE7buAaBj7HHiVUAriFb9wdPuowROX5aKXRqmQGBn6YXApK8";
+
+  function fakeSubscription(key: ArrayBuffer | null): PushSubscription {
+    return {
+      options: { applicationServerKey: key, userVisibleOnly: true },
+    } as PushSubscription;
+  }
+
+  it("accepts a subscription created with the current public key", () => {
+    const key = urlBase64ToUint8Array(publicKey);
+    expect(
+      subscriptionMatchesVapidKey(
+        fakeSubscription(key.buffer as ArrayBuffer),
+        publicKey,
+      ),
+    ).toBe(true);
+  });
+
+  it("rejects a subscription bound to a different key", () => {
+    const bytes = new Uint8Array(65);
+    bytes.fill(7);
+    expect(
+      subscriptionMatchesVapidKey(fakeSubscription(bytes.buffer), publicKey),
+    ).toBe(false);
+
+    // Same length as a real P-256 point, but one byte flipped.
+    const nearly = new Uint8Array(urlBase64ToUint8Array(publicKey));
+    nearly[1] ^= 0xff;
+    expect(
+      subscriptionMatchesVapidKey(fakeSubscription(nearly.buffer), publicKey),
+    ).toBe(false);
+  });
+
+  it("rejects a subscription with no applicationServerKey", () => {
+    expect(subscriptionMatchesVapidKey(fakeSubscription(null), publicKey)).toBe(
+      false,
+    );
   });
 });

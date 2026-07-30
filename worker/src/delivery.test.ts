@@ -67,13 +67,47 @@ describe("reminder delivery window", () => {
   });
 
   it("never sends the same reminder twice", () => {
-    const s = schedule({ notifications: [note({ id: "abc" })] });
+    const n = note({ id: "abc", fireAt: "2026-03-10T09:00:00.000Z" });
+    const s = schedule({ notifications: [n] });
     const now = AT("2026-03-10T09:01:00.000Z");
+    const alreadySent = {
+      "abc@2026-03-10T09:00:00.000Z": "2026-03-10T09:00:30.000Z",
+    };
 
     expect(dueNotifications(s, {}, now)).toHaveLength(1);
+    expect(dueNotifications(s, alreadySent, now)).toHaveLength(0);
+  });
+
+  it("re-fires after a snooze or reschedule changes fireAt", () => {
+    // Client keeps the same id (`item-7-due`) when the user moves the time.
+    // Keying only on id would suppress the new fire for days.
+    const s = schedule({
+      notifications: [
+        note({ id: "item-7-due", fireAt: "2026-03-10T14:00:00.000Z" }),
+      ],
+    });
+    const sentFromEarlier = {
+      "item-7-due@2026-03-10T09:00:00.000Z": "2026-03-10T09:00:30.000Z",
+    };
+
     expect(
-      dueNotifications(s, { abc: "2026-03-10T09:00:30.000Z" }, now),
-    ).toHaveLength(0);
+      dueNotifications(s, sentFromEarlier, AT("2026-03-10T14:01:00.000Z")),
+    ).toHaveLength(1);
+  });
+
+  it("re-fires a chase nudge when it rolls to the next morning", () => {
+    const s = schedule({
+      notifications: [
+        note({ id: "item-7-chase", fireAt: "2026-03-11T13:00:00.000Z" }),
+      ],
+    });
+    const sentYesterday = {
+      "item-7-chase@2026-03-10T13:00:00.000Z": "2026-03-10T13:00:30.000Z",
+    };
+
+    expect(
+      dueNotifications(s, sentYesterday, AT("2026-03-11T13:01:00.000Z")),
+    ).toHaveLength(1);
   });
 
   it("ignores entries with an unparseable fire time", () => {

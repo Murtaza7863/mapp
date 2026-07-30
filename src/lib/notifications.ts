@@ -25,6 +25,24 @@ export function urlBase64ToUint8Array(base64String: string): Uint8Array {
   return Uint8Array.from([...raw].map((c) => c.charCodeAt(0)));
 }
 
+/** True when the existing subscription was created with this VAPID public key. */
+export function subscriptionMatchesVapidKey(
+  subscription: PushSubscription,
+  publicKey: string,
+): boolean {
+  const existing = subscription.options.applicationServerKey;
+  if (!existing) return false;
+
+  const expected = urlBase64ToUint8Array(publicKey);
+  const actual =
+    existing instanceof ArrayBuffer
+      ? new Uint8Array(existing)
+      : new Uint8Array(existing as ArrayBufferLike);
+
+  if (actual.length !== expected.length) return false;
+  return actual.every((byte, i) => byte === expected[i]);
+}
+
 export function buildScheduledNotifications(
   items: Item[],
   now = Date.now(),
@@ -132,6 +150,13 @@ export async function registerPushSubscription(): Promise<PushSetupResult> {
 
   const registration = await navigator.serviceWorker.ready;
   let subscription = await registration.pushManager.getSubscription();
+
+  // After a VAPID key rotation the browser still holds a subscription signed
+  // for the old key. Reusing it makes Apple return 403 on every send.
+  if (subscription && !subscriptionMatchesVapidKey(subscription, publicKey)) {
+    await subscription.unsubscribe();
+    subscription = null;
+  }
 
   if (!subscription) {
     subscription = await registration.pushManager.subscribe({
